@@ -1,10 +1,10 @@
 {
-  "name": "background-image",
-  "main": "./lib/background-image",
+  "name": "editor-background",
+  "main": "./lib/editor-background",
   "version": "0.0.0",
   "description": "A short description of your package",
   "activationCommands": {
-    "atom-workspace": "background-image:toggle"
+    "atom-workspace": "editor-background:toggle"
   },
   "repository": "https://github.com/atom/background-image",
   "license": "MIT",
