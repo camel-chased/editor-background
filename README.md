@@ -1,4 +1,4 @@
-# background-image package
+# editor-background package
 
 Background image for atom.
 You can adjust opacity of the background and of course specify your background as url local or from http...
