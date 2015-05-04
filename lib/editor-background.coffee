@@ -1,51 +1,131 @@
 {CompositeDisposable} = require 'atom'
 
+qr = (selector) -> document.querySelector selector
+
+colorToArray = (str) ->
+  console.log 'str',str
+  result = str.replace(/[^\d,\.]/g,'')
+  console.log 'result before',result
+  result = result.split(',')
+  console.log 'result after',result
+  result
+
+initialized = false
+
+
 module.exports = EditorBackground =
   config:
-    url:
+    imageURL:
       type:'string'
       default:'atom://editor-background/bg.jpg'
+      order:0
+      description:"URL of your image. It can be http://...
+      or just /home/yourname/image.jpg"
+    backgroundSize:
+      type:"string"
+      default:"original"
+      enum:["original","100%","cover","manual"]
+      description:"Background size"
+      order:1
+    manualBackgroundSize:
+      type:"string"
+      default:""
+      description:"'100px 100px' or '50%' try something..."
+      order:2
+    customOverlayColor:
+      type:"boolean"
+      default:false
+      order:3
+      description:"Do you want different color on top of background? check this"
+    overlayColor:
+      type:'color'
+      default:'rgba(0,0,0,0)'
+      description:"Color used to overlay background image"
+      order:4
     opacity:
       type:'integer'
       default:'20'
+      description:"Background image visibility percent 1-100"
+      order:5
+    treeViewOpacity:
+      type:'integer'
+      default:"25"
+      description:"Tree View can be transparent too :)"
+      order:6
 
   subscriptions: null
   bgEnabled: false
+  packagesLoaded: false
 
+  elements: {}
+  colors: {}
+
+
+  initialize: ->
+    initialized = true
+    @elements.body = qr 'body'
+    @elements.workspace = qr 'atom-workspace'
+    @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
+    @elements.treeView = qr '.tree-view'
+    @elements.left = qr '.left'
+    @elements.leftPanel = qr '.panel-left'
+    @elements.resizer = qr '.tree-view-resizer'
+
+    @colors.workspaceBgColor =
+      document.defaultView.getComputedStyle(@elements.editor).backgroundColor
+    @colors.treeOriginalRGB = document.defaultView.
+    getComputedStyle(@elements.treeView).backgroundColor
+    console.log @colors
 
   activate: (state) ->
-    @subscriptions = new CompositeDisposable
-    @subscriptions.add atom.commands.add 'atom-workspace',
-     'editor-background:toggle': => @toggle()
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-    @toggle()
+    setTimeout =>
+      @packagesLoaded = true
+      if not initialized then @initialize.apply @
+      @applyBackground.apply @
+
 
   deactivate: ->
     @subscriptions.dispose()
 
   applyBackground: ->
-    body = document.querySelector('body')
-    workspace = document.querySelector('atom-workspace')
-    editor = atom.workspaceView.panes.find('atom-text-editor')[0]
-    opacity = 100 - atom.config.get('editor-background.opacity')
-    alpha=opacity / 100
-    workspaceBgColor =
-      document.defaultView.getComputedStyle(editor).backgroundColor
-    rgb = /rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(,\s*\d+[\.\d+]*)*\)/g
-    .exec(workspaceBgColor)
-    newColor = 'rgba( '+rgb[1]+' , '+rgb[2]+' , '+rgb[3]+' , '+alpha+')'
-    if @bgEnabled
-      body.style.backgroundImage =
-        'url('+atom.config.get('editor-background.url')+')'
-      workspace.style.background = newColor
-    else
-      body.style.background=''
-      workspace.style.background=''
+    atom.workspaceView.addClass 'editor-background'
+    if @packagesLoaded
+      conf = atom.config.get 'editor-background'
+      opacity = 100 - conf.opacity
+      alpha=(opacity / 100).toFixed(2)
+      console.log opacity, alpha
 
+      rgb = colorToArray @colors.workspaceBgColor
+      newColor = 'rgba( '+rgb[0]+' , '+rgb[1]+' , '+rgb[2]+' , '+alpha+')'
 
+      treeOpacity = conf.treeViewOpacity
+      treeAlpha = (treeOpacity / 100).toFixed(2)
+      treeRGB = colorToArray @colors.treeOriginalRGB
+      console.log 'treeRGB',treeRGB
 
-  toggle: ->
-    if @bgEnabled then @bgEnabled=false else @bgEnabled=true
-    atom.workspaceView.toggleClass 'editor-background'
-    @applyBackground()
+      newTreeRGBA =
+        'rgba('+treeRGB[0]+','+treeRGB[1]+','+treeRGB[2]+','+treeAlpha+')'
+
+      if conf.customOverlayColor
+        newColor = conf.overlayColor.toRGBAString()
+        rgb = colorToArray newColor
+        newColor = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha+')'
+        newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
+
+      bgImage = 'url('+conf.imageURL+')'
+      @elements.body.style.backgroundImage = bgImage
+
+      if conf.backgroundSize!='original'
+        @elements.body.style.backgroundSize=conf.backgroundSize
+      if conf.manualBackgroundSize
+        @elements.body.style.backgroundSize=conf.manualBackgroundSize
+
+      @elements.workspace.style.background = newColor
+
+      if conf.treeViewOpacity > 0
+        @elements.treeView.style.background = newTreeRGBA
+        @elements.left.style.background = 'transparent'
+        @elements.resizer.style.background = 'transparent'
+        @elements.leftPanel.style.background= 'transparent'

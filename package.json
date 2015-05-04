@@ -23,6 +23,9 @@
     "wallpaper",
     "pic",
     "bg",
-    "change"
+    "change",
+    "pattern",
+    "seamless",
+    "tileable"
   ]
 }
