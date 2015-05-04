@@ -1,6 +1,6 @@
 {
   "name": "editor-background",
-  "main": "./lib/editor-background",
+  "main": "./lib/init",
   "version": "0.1.0",
   "description": "Background image changer for atom editor.\n\nYou can adjust opacity and set your own image url :)\n",
   "activationCommands": {
@@ -11,5 +11,12 @@
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "_atomModuleCache": {
+    "extensions":{
+      ".coffee":[
+        "lib/init.coffee"
+      ]
+    }
+  }
 }
