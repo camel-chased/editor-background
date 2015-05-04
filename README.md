@@ -5,3 +5,21 @@ You can adjust opacity of the background and of course specify your background a
 
 ![background](http://download.menedzer.net.pl/wood_bg.jpg)
 ![background](http://download.menedzer.net.pl/editor_matrix.gif)
+
+
+
+
+seo keywords:
+
+* background
+* image
+* picture
+* animation
+* editor
+* backgournd image
+* background picture
+* editor background
+* editor background image
+
+
+background, editor background image, background animation, background picture, editor bg, customize background, custom background, wallpaper, pattern
