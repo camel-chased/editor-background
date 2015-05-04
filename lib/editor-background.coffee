@@ -10,8 +10,6 @@ colorToArray = (str) ->
   console.log 'result after',result
   result
 
-initialized = false
-
 
 module.exports = EditorBackground =
   config:
@@ -53,38 +51,44 @@ module.exports = EditorBackground =
       description:"Tree View can be transparent too :)"
       order:6
 
-  subscriptions: null
-  bgEnabled: false
-  packagesLoaded: false
-
+  packagesLoaded:false
+  initialized:false
   elements: {}
   colors: {}
+  state: {}
 
-
-  initialize: ->
-    initialized = true
-    @elements.body = qr 'body'
-    @elements.workspace = qr 'atom-workspace'
-    @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
-    @elements.treeView = qr '.tree-view'
-    @elements.left = qr '.left'
-    @elements.leftPanel = qr '.panel-left'
-    @elements.resizer = qr '.tree-view-resizer'
-
-    @colors.workspaceBgColor =
-      document.defaultView.getComputedStyle(@elements.editor).backgroundColor
-    @colors.treeOriginalRGB = document.defaultView.
-    getComputedStyle(@elements.treeView).backgroundColor
-    console.log @colors
+  log: (event) ->
+    console.log event
 
   activate: (state) ->
+    @state = state
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-    setTimeout =>
-      @packagesLoaded = true
-      if not initialized then @initialize.apply @
-      @applyBackground.apply @
+    process.nextTick =>
+      @letsrock.apply @
 
+  initialize: ->
+    if not @initialized
+      @initialized = true
+      @elements.body = qr 'body'
+      @elements.workspace = qr 'atom-workspace'
+      @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
+      @elements.treeView = qr '.tree-view'
+      @elements.left = qr '.left'
+      @elements.leftPanel = qr '.panel-left'
+      @elements.resizer = qr '.tree-view-resizer'
+
+      @colors.workspaceBgColor =
+        document.defaultView.getComputedStyle(@elements.editor).backgroundColor
+      @colors.treeOriginalRGB = document.defaultView.
+      getComputedStyle(@elements.treeView).backgroundColor
+      console.log @colors
+
+  letsrock: ->
+    console.log 'lets rock'
+    @packagesLoaded = true
+    if not @initialized then @initialize.apply @
+    @applyBackground.apply @
 
   deactivate: ->
     @subscriptions.dispose()
