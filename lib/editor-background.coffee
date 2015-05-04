@@ -17,8 +17,8 @@ module.exports = EditorBackground =
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-workspace',
      'editor-background:toggle': => @toggle()
-    atom.config.observe 'editor-background', (conf) =>
-      @applyBackground.apply @,[conf]
+    atom.config.observe 'editor-background',
+     (conf) => @applyBackground.apply @,[conf]
 
 
   deactivate: ->
