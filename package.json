@@ -8,5 +8,21 @@
   "engines": {
     "atom": ">=0.174.0 <2.0.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "keywords":[
+    "background",
+    "editor",
+    "editor-background",
+    "backgrounds",
+    "image",
+    "animation",
+    "background animation",
+    "style",
+    "custom",
+    "theme",
+    "wallpaper",
+    "pic",
+    "bg",
+    "change"
+  ]
 }
