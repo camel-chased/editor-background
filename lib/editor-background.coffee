@@ -57,38 +57,32 @@ module.exports = EditorBackground =
   colors: {}
   state: {}
 
-  log: (event) ->
-    console.log event
-
   activate: (state) ->
-    @state = state
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-    process.nextTick =>
-      @letsrock.apply @
+    @initialize()
 
   initialize: ->
-    if not @initialized
-      @initialized = true
-      @elements.body = qr 'body'
-      @elements.workspace = qr 'atom-workspace'
-      @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
-      @elements.treeView = qr '.tree-view'
-      @elements.left = qr '.left'
-      @elements.leftPanel = qr '.panel-left'
-      @elements.resizer = qr '.tree-view-resizer'
-
-      @colors.workspaceBgColor =
-        document.defaultView.getComputedStyle(@elements.editor).backgroundColor
-      @colors.treeOriginalRGB = document.defaultView.
-      getComputedStyle(@elements.treeView).backgroundColor
+    @elements.body = qr 'body'
+    @elements.workspace = qr 'atom-workspace'
+    @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
+    @elements.treeView = qr '.tree-view'
+    @elements.left = qr '.left'
+    @elements.leftPanel = qr '.panel-left'
+    @elements.resizer = qr '.tree-view-resizer'
+    keys = Object.keys @elements
+    loaded = (@elements[k] for k in keys when @elements[k]?)
+    console.log 'loaded/needed',loaded.length,keys.length,@
+    if loaded.length == keys.length
+      console.log 'this',@
+      @colors.workspaceBgColor=document.defaultView.getComputedStyle(@elements.editor).backgroundColor
+      @colors.treeOriginalRGB=document.defaultView.getComputedStyle(@elements.treeView).backgroundColor
       console.log @colors
+      @packagesLoaded = true
+      @applyBackground.apply @
+    else
+      setTimeout (=>@initialize.apply @),1000
 
-  letsrock: ->
-    console.log 'lets rock'
-    @packagesLoaded = true
-    if not @initialized then @initialize.apply @
-    @applyBackground.apply @
 
   deactivate: ->
     @subscriptions.dispose()
