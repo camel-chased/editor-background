@@ -19,7 +19,7 @@ module.exports = EditorBackground =
      'editor-background:toggle': => @toggle()
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-
+    @toggle()
 
   deactivate: ->
     @subscriptions.dispose()
