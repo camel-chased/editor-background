@@ -1,7 +1,5 @@
 {CompositeDisposable} = require 'atom'
 
-document.addEventListener 'DOMContentLoaded',EditorBackground.loaded
-
 module.exports = EditorBackground =
   config:
     url:
@@ -14,15 +12,11 @@ module.exports = EditorBackground =
   subscriptions: null
   bgEnabled: false
 
-  loaded: ->
-    console.log 'ok loaded'
 
   activate: (state) ->
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-workspace',
      'editor-background:toggle': => @toggle()
-    s = new CompositeDisposable
-    s.add atom.packages.onDidActivateInitialPackages => @loaded
     atom.config.observe 'editor-background', (conf) =>
       @applyBackground.apply @,[conf]
 
@@ -34,7 +28,6 @@ module.exports = EditorBackground =
     body = document.querySelector('body')
     workspace = document.querySelector('atom-workspace')
     editor = atom.workspaceView.panes.find('atom-text-editor')[0]
-
     opacity = 100 - atom.config.get('editor-background.opacity')
     alpha=opacity / 100
     workspaceBgColor =
