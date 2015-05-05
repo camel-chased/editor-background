@@ -14,7 +14,7 @@ Features:
 * theme independent
 
 
-![background](http://download.menedzer.net.pl/custom.jpg)
+![background](http://download.menedzer.net.pl/customm.jpg)
 ![background](http://download.menedzer.net.pl/treeview_bg.jpg)
 ![background](http://download.menedzer.net.pl/custom_style.jpg)
 ![background](http://download.menedzer.net.pl/editor_matrix.gif)
