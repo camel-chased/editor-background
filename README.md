@@ -9,6 +9,7 @@ Features:
 * ability to specify background size
 * ability to adjust tree view opacity
 * transparent tab bar background
+* text shadows
 * custom css rules on top of background (like gradients)
 * theme independent
 
