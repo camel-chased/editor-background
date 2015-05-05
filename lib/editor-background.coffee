@@ -54,12 +54,12 @@ module.exports = EditorBackground =
       order:4
     opacity:
       type:'integer'
-      default:'20'
+      default:'100'
       description:"Background image visibility percent 1-100"
       order:5
     treeViewOpacity:
       type:'integer'
-      default:"25"
+      default:"35"
       description:"Tree View can be transparent too :)"
       order:6
     transparentTabBar:
@@ -69,7 +69,7 @@ module.exports = EditorBackground =
       order:7
     style:
       type:"string"
-      default:"background:radial-gradient(rgba(0,0,0,0) 30%,#000);"
+      default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
       order:8
 
@@ -143,6 +143,8 @@ module.exports = EditorBackground =
 
       if conf.backgroundSize!='original'
         inline @elements.body, 'background-size:'+conf.backgroundSize+' !important'
+      else
+        inline @elements.body, 'background-size:auto !important'
       if conf.manualBackgroundSize
         inline @elements.body, 'background-size:'+conf.manualBackgroundSize+' !important'
 
