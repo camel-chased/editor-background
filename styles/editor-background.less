@@ -3,9 +3,13 @@
 // See https://github.com/atom/atom-dark-ui/blob/master/styles/ui-variables.less
 // for a full listing of what's available.
 @import "ui-variables";
-
+body{
+  z-index:0;
+}
 .editor-background {
-
+  &atom-workspace{
+    z-index: 2;
+  }
   atom-pane{
     background:transparent !important;
   }

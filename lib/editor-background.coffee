@@ -1,6 +1,17 @@
 {CompositeDisposable} = require 'atom'
 
 qr = (selector) -> document.querySelector selector
+style = (element) -> document.defaultView.getComputedStyle element
+
+planeInitialCss =
+  "position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:transparent;
+  pointer-events:none;
+  z-index:0;"
 
 colorToArray = (str) ->
   console.log 'str',str
@@ -50,6 +61,11 @@ module.exports = EditorBackground =
       default:"25"
       description:"Tree View can be transparent too :)"
       order:6
+    style:
+      type:"string"
+      default:""
+      description:"Your custom css rules :]"
+      order:7
 
   packagesLoaded:false
   initialized:false
@@ -70,13 +86,18 @@ module.exports = EditorBackground =
     @elements.left = qr '.left'
     @elements.leftPanel = qr '.panel-left'
     @elements.resizer = qr '.tree-view-resizer'
+    @elements.html = qr 'html'
+
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
-    console.log 'loaded/needed',loaded.length,keys.length,@
+
     if loaded.length == keys.length
-      console.log 'this',@
-      @colors.workspaceBgColor=document.defaultView.getComputedStyle(@elements.editor).backgroundColor
-      @colors.treeOriginalRGB=document.defaultView.getComputedStyle(@elements.treeView).backgroundColor
+      @elements.plane = document.createElement('div')
+      @elements.plane.style.cssText = planeInitialCss
+      @elements.body.insertBefore @elements.plane,@elements.body.childNodes[0]
+
+      @colors.workspaceBgColor=style(@elements.editor).backgroundColor
+      @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       console.log @colors
       @packagesLoaded = true
       @applyBackground.apply @
@@ -93,7 +114,6 @@ module.exports = EditorBackground =
       conf = atom.config.get 'editor-background'
       opacity = 100 - conf.opacity
       alpha=(opacity / 100).toFixed(2)
-      console.log opacity, alpha
 
       rgb = colorToArray @colors.workspaceBgColor
       newColor = 'rgba( '+rgb[0]+' , '+rgb[1]+' , '+rgb[2]+' , '+alpha+')'
@@ -101,7 +121,6 @@ module.exports = EditorBackground =
       treeOpacity = conf.treeViewOpacity
       treeAlpha = (treeOpacity / 100).toFixed(2)
       treeRGB = colorToArray @colors.treeOriginalRGB
-      console.log 'treeRGB',treeRGB
 
       newTreeRGBA =
         'rgba('+treeRGB[0]+','+treeRGB[1]+','+treeRGB[2]+','+treeAlpha+')'
@@ -119,6 +138,9 @@ module.exports = EditorBackground =
         @elements.body.style.backgroundSize=conf.backgroundSize
       if conf.manualBackgroundSize
         @elements.body.style.backgroundSize=conf.manualBackgroundSize
+
+      if conf.style
+        @elements.plane.style.cssText+=conf.style
 
       @elements.workspace.style.background = newColor
 
