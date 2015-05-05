@@ -1,7 +1,17 @@
 # editor-background package
 
-Background image for atom.
-You can adjust opacity of the background and of course specify your background as url local or from http...
+Background image for atom. Theme independent, feature rich atom plugin for graphic customization.
+
+Features:
+
+* custom background image
+* custom overlay color on top of image
+* ability to specify background size
+* ability to adjust tree view opacity
+* transparent tab bar background
+* custom css rules on top of background (like gradients)
+* theme independent
+
 
 ![background](http://download.menedzer.net.pl/treeview_bg.jpg)
 ![background](http://download.menedzer.net.pl/custom_style.jpg)
@@ -10,7 +20,7 @@ You can adjust opacity of the background and of course specify your background a
 
 
 
-seo keywords:
+some keywords:
 
 * background
 * image

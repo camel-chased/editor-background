@@ -26,6 +26,7 @@
     "change",
     "pattern",
     "seamless",
-    "tileable"
+    "tileable",
+    "css"
   ]
 }

@@ -2,6 +2,7 @@
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
+inline = (element,style) -> element.style.cssText += style
 
 planeInitialCss =
   "position:absolute;
@@ -61,11 +62,16 @@ module.exports = EditorBackground =
       default:"25"
       description:"Tree View can be transparent too :)"
       order:6
+    transparentTabBar:
+      type:"boolean"
+      default:true
+      desctiption:"Transparent background under file tabs"
+      order:7
     style:
       type:"string"
-      default:""
+      default:"background:radial-gradient(rgba(0,0,0,0) 30%,#000);"
       description:"Your custom css rules :]"
-      order:7
+      order:8
 
   packagesLoaded:false
   initialized:false
@@ -86,7 +92,8 @@ module.exports = EditorBackground =
     @elements.left = qr '.left'
     @elements.leftPanel = qr '.panel-left'
     @elements.resizer = qr '.tree-view-resizer'
-    @elements.html = qr 'html'
+    @elements.tabBar = qr '.tab-bar'
+    @elements.insetPanel = qr '.inset-panel'
 
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
@@ -132,20 +139,24 @@ module.exports = EditorBackground =
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
 
       bgImage = 'url('+conf.imageURL+')'
-      @elements.body.style.backgroundImage = bgImage
+      inline @elements.body,'background-image:'+bgImage+' !important'
 
       if conf.backgroundSize!='original'
-        @elements.body.style.backgroundSize=conf.backgroundSize
+        inline @elements.body, 'background-size:'+conf.backgroundSize+' !important'
       if conf.manualBackgroundSize
-        @elements.body.style.backgroundSize=conf.manualBackgroundSize
+        inline @elements.body, 'background-size:'+conf.manualBackgroundSize+' !important'
 
       if conf.style
         @elements.plane.style.cssText+=conf.style
 
-      @elements.workspace.style.background = newColor
+      if conf.transparentTabBar
+        inline @elements.tabBar,'background:rgba(0,0,0,0) !important'
+        inline @elements.insetPanel,'background:rgba(0,0,0,0) !important'
+
+      inline @elements.workspace,'background:'+newColor+' !important'
 
       if conf.treeViewOpacity > 0
-        @elements.treeView.style.background = newTreeRGBA
-        @elements.left.style.background = 'transparent'
-        @elements.resizer.style.background = 'transparent'
-        @elements.leftPanel.style.background= 'transparent'
+        inline @elements.treeView,'background:'+newTreeRGBA+' !important'
+        inline @elements.left,'background:transparent !important'
+        inline @elements.resizer,'background:transparent !important'
+        inline @elements.leftPanel,'background:transparent !important'
