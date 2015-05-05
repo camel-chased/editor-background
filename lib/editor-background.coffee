@@ -67,11 +67,16 @@ module.exports = EditorBackground =
       default:true
       desctiption:"Transparent background under file tabs"
       order:7
+    textShadow:
+      type:"string"
+      default:"0px 5px 2px rgba(0, 0, 0, 0.52)"
+      description:"Add a little text shadow to code"
+      order:8
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:8
+      order:9
 
   packagesLoaded:false
   initialized:false
@@ -83,6 +88,14 @@ module.exports = EditorBackground =
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
     @initialize()
+
+  appendCss: () ->
+    css = ""
+    cssstyle = document.createElement 'style'
+    cssstyle.type = 'text/css'
+    cssstyle.setAttribute 'id','#editor-background-css'
+    @elements.body.insertBefore cssstyle,@elements.body.childNodes[0]
+    @elements.css = cssstyle
 
   initialize: ->
     @elements.body = qr 'body'
@@ -102,7 +115,7 @@ module.exports = EditorBackground =
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.body.insertBefore @elements.plane,@elements.body.childNodes[0]
-
+      @appendCss()
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       console.log @colors
@@ -139,26 +152,29 @@ module.exports = EditorBackground =
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
 
       bgImage = 'url('+conf.imageURL+')'
-      inline @elements.body,'background-image:'+bgImage+' !important'
+      inline @elements.body,'background-image:'+bgImage+' !important;'
+
+      if conf.textShadow
+        @elements.css.innerText=".line{text-shadow:"+conf.textShadow+" !important;}"
 
       if conf.backgroundSize!='original'
-        inline @elements.body, 'background-size:'+conf.backgroundSize+' !important'
+        inline @elements.body, 'background-size:'+conf.backgroundSize+' !important;'
       else
         inline @elements.body, 'background-size:auto !important'
       if conf.manualBackgroundSize
-        inline @elements.body, 'background-size:'+conf.manualBackgroundSize+' !important'
+        inline @elements.body, 'background-size:'+conf.manualBackgroundSize+' !important;'
 
       if conf.style
         @elements.plane.style.cssText+=conf.style
 
       if conf.transparentTabBar
-        inline @elements.tabBar,'background:rgba(0,0,0,0) !important'
-        inline @elements.insetPanel,'background:rgba(0,0,0,0) !important'
+        inline @elements.tabBar,'background:rgba(0,0,0,0) !important;'
+        inline @elements.insetPanel,'background:rgba(0,0,0,0) !important;'
 
-      inline @elements.workspace,'background:'+newColor+' !important'
+      inline @elements.workspace,'background:'+newColor+' !important;'
 
       if conf.treeViewOpacity > 0
-        inline @elements.treeView,'background:'+newTreeRGBA+' !important'
-        inline @elements.left,'background:transparent !important'
-        inline @elements.resizer,'background:transparent !important'
-        inline @elements.leftPanel,'background:transparent !important'
+        inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
+        inline @elements.left,'background:transparent !important;'
+        inline @elements.resizer,'background:transparent !important;'
+        inline @elements.leftPanel,'background:transparent !important;'
