@@ -77,6 +77,22 @@ module.exports = EditorBackground =
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
       order:9
+    boxDepth:
+      type:"integer"
+      default: 500
+      minimum: 0
+      maximum: 2000
+    boxOpacity:
+      type:"integer"
+      default:30
+      minimum:0
+      maximum:100
+    boxRange:
+      type:"integer"
+      default:300
+      minimum:0
+      maximum:1000
+
 
   packagesLoaded:false
   initialized:false
@@ -97,6 +113,34 @@ module.exports = EditorBackground =
     @elements.body.insertBefore cssstyle,@elements.body.childNodes[0]
     @elements.css = cssstyle
 
+  createBox: (depth) ->
+    #body=(qr 'atom-text-editor').shadowRoot.querySelector('.editor--private')
+    body = qr 'body'
+    jest = qr 'body .eb-box-wrapper'
+    if not jest? or jest.length==0
+      left = document.createElement 'div'
+      top = document.createElement 'div'
+      right = document.createElement 'div'
+      bottom = document.createElement 'div'
+      back = document.createElement 'div'
+      wrapper = document.createElement 'div'
+      wrapper.appendChild left
+      wrapper.appendChild top
+      wrapper.appendChild right
+      wrapper.appendChild bottom
+      wrapper.appendChild back
+      wrapper.setAttribute 'class','eb-box-wrapper'
+      left.setAttribute 'class','eb-left'
+      top.setAttribute 'class','eb-top'
+      right.setAttribute 'class','eb-right'
+      bottom.setAttribute 'class','eb-bottom'
+      back.setAttribute 'class','eb-back'
+      body.insertBefore wrapper,body.childNodes[0]
+      boxStyle = document.createElement 'style'
+      boxStyle.type = "text/css"
+      body.insertBefore boxStyle,body.childNodes[0]
+    boxStyle
+
   initialize: ->
     @elements.body = qr 'body'
     @elements.workspace = qr 'atom-workspace'
@@ -112,6 +156,8 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
+      @elements.boxStyle = @createBox()
+      console.log 'boxStyle',@elements.boxStyle
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.body.insertBefore @elements.plane,@elements.body.childNodes[0]
@@ -123,6 +169,64 @@ module.exports = EditorBackground =
       @applyBackground.apply @
     else
       setTimeout (=>@initialize.apply @),1000
+
+
+  updateBox: (depth) ->
+    depth2 = depth // 2
+    conf=atom.config.get('editor-background')
+    background=conf.imageURL
+    opacity=(conf.boxOpacity / 100).toFixed(2)
+    range=conf.boxRange
+    boxCss="
+    .eb-box-wrapper{
+      perspective:1000px;
+      perspective-origin:50% 50%;
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+    }
+    .eb-left,.eb-top,.eb-right,.eb-bottom,.eb-back{
+      position:fixed;
+      transform-origin:50% 50%;
+      box-shadow:inset 0px 0px #{range}px rgba(0,0,0,#{opacity});
+      background:url(#{background});
+    }
+    .eb-left,.eb-right{
+      width:#{depth}px;
+      height:100%;
+    }
+    .eb-top,.eb-bottom{
+      width:100%;
+      height:#{depth}px;
+    }
+    .eb-left{
+      transform: translate3d(-50%,0,0) rotateY(90deg);
+      left:0;
+    }
+    .eb-top{
+      transform: translate3d(0,-50%,0) rotateX(-90deg);
+      top:0;
+    }
+    .eb-right{
+      transform: translate3d(50%,0,0) rotateY(-90deg);
+      right:0;
+    }
+    .eb-bottom{
+      transform: translate3d(0,50%,0) rotateX(90deg);
+      bottom:0;
+    }
+    .eb-back{
+      transform: translate3d(0,0,-#{depth2}px);
+      width:100%;
+      height:100%;
+    }
+    "
+    console.log 'elements',@elements
+    @elements.boxStyle.innerText = boxCss
+    if depth==0
+      @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
 
   deactivate: ->
@@ -156,6 +260,8 @@ module.exports = EditorBackground =
 
       if conf.textShadow
         @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+conf.textShadow+" !important;}"
+
+      @updateBox conf.boxDepth
 
       if conf.backgroundSize!='original'
         inline @elements.body, 'background-size:'+conf.backgroundSize+' !important;'
