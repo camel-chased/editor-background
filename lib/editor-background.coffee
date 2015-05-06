@@ -15,11 +15,8 @@ planeInitialCss =
   z-index:0;"
 
 colorToArray = (str) ->
-  console.log 'str',str
   result = str.replace(/[^\d,\.]/g,'')
-  console.log 'result before',result
   result = result.split(',')
-  console.log 'result after',result
   result
 
 
@@ -92,6 +89,11 @@ module.exports = EditorBackground =
       default:300
       minimum:0
       maximum:1000
+    blurRadius:
+      type:"integer"
+      default:"4"
+      minimim:0
+      maximum: 80
 
 
   packagesLoaded:false
@@ -99,6 +101,8 @@ module.exports = EditorBackground =
   elements: {}
   colors: {}
   state: {}
+  mouseX:0
+  mouseY:0
 
   activate: (state) ->
     atom.config.observe 'editor-background',
@@ -141,6 +145,15 @@ module.exports = EditorBackground =
       body.insertBefore boxStyle,body.childNodes[0]
     boxStyle
 
+  mouseMove: (ev) ->
+    @mouseX=ev.pageX
+    @mouseY=ev.pageY
+
+
+  activateMouseMove: ->
+    window.addEventListener 'mousemove',(ev) =>  @mouseMove.apply @,[ev]
+
+
   initialize: ->
     @elements.body = qr 'body'
     @elements.workspace = qr 'atom-workspace'
@@ -156,12 +169,18 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
-      @elements.boxStyle = @createBox()
-      console.log 'boxStyle',@elements.boxStyle
+      @activateMouseMove()
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.body.insertBefore @elements.plane,@elements.body.childNodes[0]
       @appendCss()
+
+      @elements.boxStyle = @createBox()
+
+      @elements.bg = document.createElement('div')
+      @elements.bg.style.cssText="position:absolute;width:100%;height:100%;"
+      @elements.body.insertBefore @elements.bg,@elements.body.childNodes[0]
+
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       console.log @colors
@@ -177,6 +196,13 @@ module.exports = EditorBackground =
     background=conf.imageURL
     opacity=(conf.boxOpacity / 100).toFixed(2)
     range=conf.boxRange
+    range2=range // 3
+    bgSize=conf.backgroundSize
+    if bgSize=='manual' then bgSize=manualBackgroundSize
+    if bgSize=='original' then bgSize='auto'
+    body = qr 'body'
+    x=body.style.width - @mouseX
+    y=@mouseY
     boxCss="
     .eb-box-wrapper{
       perspective:1000px;
@@ -190,7 +216,8 @@ module.exports = EditorBackground =
     .eb-left,.eb-top,.eb-right,.eb-bottom,.eb-back{
       position:fixed;
       transform-origin:50% 50%;
-      box-shadow:inset 0px 0px #{range}px rgba(0,0,0,#{opacity});
+      box-shadow:inset 0px 0px #{range}px rgba(0,0,0,#{opacity}),
+                  inset 0px 0px #{range2}px rgba(0,0,0,#{opacity});
       background:url(#{background});
     }
     .eb-left,.eb-right{
@@ -219,6 +246,7 @@ module.exports = EditorBackground =
     }
     .eb-back{
       transform: translate3d(0,0,-#{depth2}px);
+      background-size:#{bgSize};
       width:100%;
       height:100%;
     }
@@ -256,19 +284,22 @@ module.exports = EditorBackground =
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
 
       bgImage = 'url('+conf.imageURL+')'
-      inline @elements.body,'background-image:'+bgImage+' !important;'
+      inline @elements.bg,'background-image:'+bgImage+' !important;'
 
       if conf.textShadow
-        @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+conf.textShadow+" !important;}"
+        @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+
+        conf.textShadow+" !important;}"
 
       @updateBox conf.boxDepth
 
       if conf.backgroundSize!='original'
-        inline @elements.body, 'background-size:'+conf.backgroundSize+' !important;'
+        inline @elements.bg, 'background-size:'+conf.backgroundSize+
+        ' !important;'
       else
-        inline @elements.body, 'background-size:auto !important'
+        inline @elements.bg, 'background-size:auto !important'
       if conf.manualBackgroundSize
-        inline @elements.body, 'background-size:'+conf.manualBackgroundSize+' !important;'
+        inline @elements.bg, 'background-size:'+conf.manualBackgroundSize+
+        ' !important;'
 
       if conf.style
         @elements.plane.style.cssText+=conf.style
@@ -278,6 +309,11 @@ module.exports = EditorBackground =
         inline @elements.insetPanel,'background:rgba(0,0,0,0) !important;'
 
       inline @elements.workspace,'background:'+newColor+' !important;'
+
+      if conf.boxDepth==0
+        inline @elements.bg,'-webkit-filter: blur('+conf.blurRadius+'px)'
+      else
+        inline @elements.bg,'-webkit-filter: blur(0px)'
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
