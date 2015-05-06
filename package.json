@@ -1,7 +1,7 @@
 {
   "name": "editor-background",
   "main": "./lib/editor-background",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Background image changer for atom editor.\n\nYou can adjust opacity and set your own image url :)\n",
   "repository": "https://github.com/camel-chased/editor-background.git",
   "license": "MIT",
