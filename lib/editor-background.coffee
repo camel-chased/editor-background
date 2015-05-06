@@ -155,7 +155,7 @@ module.exports = EditorBackground =
       inline @elements.body,'background-image:'+bgImage+' !important;'
 
       if conf.textShadow
-        @elements.css.innerText=".line{text-shadow:"+conf.textShadow+" !important;}"
+        @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+conf.textShadow+" !important;}"
 
       if conf.backgroundSize!='original'
         inline @elements.body, 'background-size:'+conf.backgroundSize+' !important;'
