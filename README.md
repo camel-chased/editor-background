@@ -18,7 +18,7 @@ Features:
 
 ![background](http://download.menedzer.net.pl/customm.jpg)
 ![background](http://download.menedzer.net.pl/bg1.jpg)
-![background](http://download.menedzer.net.pl/bg3.jpg)
+![background](http://download.menedzer.net.pl/blackops.png)
 ![background](http://download.menedzer.net.pl/treeview_bg.jpg)
 ![background](http://download.menedzer.net.pl/editor_matrix.gif)
 
