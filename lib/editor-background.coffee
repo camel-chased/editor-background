@@ -198,7 +198,7 @@ module.exports = EditorBackground =
     range=conf.boxRange
     range2=range // 3
     bgSize=conf.backgroundSize
-    if bgSize=='manual' then bgSize=manualBackgroundSize
+    if bgSize=='manual' then bgSize=conf.manualBackgroundSize
     if bgSize=='original' then bgSize='auto'
     body = qr 'body'
     x=body.style.width - @mouseX
