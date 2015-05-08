@@ -64,16 +64,22 @@ module.exports = EditorBackground =
       default:true
       desctiption:"Transparent background under file tabs"
       order:7
+    mouseFactor:
+      type:"integer"
+      default: 4
+      description: "move background with mouse (higher value = slower)"
+      order:8
     textShadow:
       type:"string"
-      default:"0px 5px 2px rgba(0, 0, 0, 0.52)"
+      #default:"0px 5px 2px rgba(0, 0, 0, 0.52)"
+      default:"0px 0px 1px rgba(0,0,0,1),0px 0px 3px #000,0px 0px 3px #000"
       description:"Add a little text shadow to code"
-      order:8
+      order:9
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:9
+      order:10
     boxDepth:
       type:"integer"
       default: 500
@@ -146,12 +152,15 @@ module.exports = EditorBackground =
     boxStyle
 
   mouseMove: (ev) ->
+    conf=atom.config.get('editor-background')
     @mouseX=ev.pageX
     @mouseY=ev.pageY
+    if conf.boxDepth>0 then @updateBox() else @updateBgPos()
 
 
   activateMouseMove: ->
-    window.addEventListener 'mousemove',(ev) =>  @mouseMove.apply @,[ev]
+    body = document.querySelector 'body'
+    body.addEventListener 'mousemove',(ev) =>  @mouseMove.apply @,[ev]
 
 
   initialize: ->
@@ -169,7 +178,8 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
-      @activateMouseMove()
+      conf=atom.config.get('editor-background')
+      if conf.mouseFactor>0 then @activateMouseMove()
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.body.insertBefore @elements.plane,@elements.body.childNodes[0]
@@ -183,16 +193,28 @@ module.exports = EditorBackground =
 
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
-      console.log @colors
       @packagesLoaded = true
       @applyBackground.apply @
     else
       setTimeout (=>@initialize.apply @),1000
 
+  updateBgPos: ->
+    conf = atom.config.get('editor-background')
+    body = qr 'body'
+    factor = conf.mouseFactor
+    polowaX = body.clientWidth // 2
+    polowaY = body.clientHeight // 2
+    offsetX =  @mouseX - polowaX
+    offsetY =  @mouseY - polowaY
+    x = (offsetX // factor)
+    y = (offsetY // factor)
+    inline @elements.bg,"background-position:#{x}px #{y}px !important;"
+
 
   updateBox: (depth) ->
-    depth2 = depth // 2
     conf=atom.config.get('editor-background')
+    if not depth? then depth = conf.boxDepth
+    depth2 = depth // 2
     background=conf.imageURL
     opacity=(conf.boxOpacity / 100).toFixed(2)
     range=conf.boxRange
@@ -201,12 +223,17 @@ module.exports = EditorBackground =
     if bgSize=='manual' then bgSize=conf.manualBackgroundSize
     if bgSize=='original' then bgSize='auto'
     body = qr 'body'
-    x=body.style.width - @mouseX
-    y=@mouseY
+    factor = conf.mouseFactor
+    polowaX = body.clientWidth // 2
+    polowaY = body.clientHeight // 2
+    offsetX =  @mouseX - polowaX
+    offsetY =  @mouseY - polowaY
+    x = polowaX + (offsetX // factor)
+    y = polowaY + (offsetY // factor)
     boxCss="
     .eb-box-wrapper{
       perspective:1000px;
-      perspective-origin:50% 50%;
+      perspective-origin:#{x}px #{y}px;
       position:fixed;
       top:0;
       left:0;
@@ -233,7 +260,7 @@ module.exports = EditorBackground =
       left:0;
     }
     .eb-top{
-      transform: translate3d(0,-50%,0) rotateX(-90deg);
+      transform: translate3d(0,-50%,0) rotateX(90deg);
       top:0;
     }
     .eb-right{
@@ -241,7 +268,7 @@ module.exports = EditorBackground =
       right:0;
     }
     .eb-bottom{
-      transform: translate3d(0,50%,0) rotateX(90deg);
+      transform: translate3d(0,50%,0) rotateX(-90deg);
       bottom:0;
     }
     .eb-back{
@@ -251,14 +278,9 @@ module.exports = EditorBackground =
       height:100%;
     }
     "
-    console.log 'elements',@elements
     @elements.boxStyle.innerText = boxCss
     if depth==0
       @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
-
-
-  deactivate: ->
-    @subscriptions.dispose()
 
   applyBackground: ->
     atom.workspaceView.addClass 'editor-background'
@@ -290,7 +312,10 @@ module.exports = EditorBackground =
         @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+
         conf.textShadow+" !important;}"
 
-      @updateBox conf.boxDepth
+      if conf.boxDepth>0
+        @updateBox conf.boxDepth
+      else
+        @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
       if conf.backgroundSize!='original'
         inline @elements.bg, 'background-size:'+conf.backgroundSize+
