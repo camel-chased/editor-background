@@ -90,13 +90,16 @@ module.exports = EditorBackground =
       default:30
       minimum:0
       maximum:100
+      description:"shadow opacity not box itself ;)"
     boxRange:
       type:"integer"
+      description:"this is shadow"
       default:300
       minimum:0
       maximum:1000
     blurRadius:
       type:"integer"
+      description:"0 = none"
       default:"4"
       minimim:0
       maximum: 80
