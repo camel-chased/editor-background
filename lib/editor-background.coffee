@@ -126,6 +126,7 @@ module.exports = EditorBackground =
   mouseX:0
   mouseY:0
   editorStyles:[]
+  editor:{}
 
   activate: (state) ->
     atom.config.observe 'editor-background',
@@ -190,14 +191,26 @@ module.exports = EditorBackground =
         background:rgba(#{rgba});
         padding-right:13px;
       }
-      .line>span.source:before{
-        content:'';
-      }
     "
     style.innerText=linesBgCss
 
-  applyConfToEditors:->
+  applyConfToEditors: ->
     @applyConfToEditor style for style in @editorStyles
+
+
+  cursorPosChanged:(event,editor)->
+
+
+  editorChanged:(event,editor)->
+    range = editor.getVisibleRowRange()
+    first = range[0]
+    last = range[1]
+    buff = editor.displayBuffer
+    console.log buff
+    for lineNumber in [first..last]
+      line=editor.lineTextForBufferRow(lineNumber)
+      indent = editor.indentationForBufferRow(lineNumber)
+
 
 
 
@@ -210,6 +223,12 @@ module.exports = EditorBackground =
     lines.insertBefore linesBg,lines.firstChild
     @editorStyles.push linesBg
     @applyConfToEditor linesBg
+    ed = editor.editor
+    @editor.lineHeight = ed.getLineHeightInPixels()
+    console.log 'lineHeight: ',@editor.lineHeight
+    ed.onDidChange (e)=> @editorChanged.apply @,[e,ed]
+    ed.onDidChangeCursorPosition (e)=>@cursorPosChanged.apply @,[e,ed]
+
 
   watchEditors: ->
     atom.workspaceView.eachEditorView (editor) => @watchEditor.apply @,[editor]
