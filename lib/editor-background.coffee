@@ -188,6 +188,10 @@ module.exports = EditorBackground =
     linesBgCss = "
       .line>span.source{
         background:rgba(#{rgba});
+        padding-right:13px;
+      }
+      .line>span.source:before{
+        content:'';
       }
     "
     style.innerText=linesBgCss
