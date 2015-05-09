@@ -130,7 +130,6 @@ module.exports = EditorBackground =
     @elements.css = cssstyle
 
   createBox: (depth) ->
-    #body=(qr 'atom-text-editor').shadowRoot.querySelector('.editor--private')
     body = qr 'body'
     jest = qr 'body .eb-box-wrapper'
     if not jest? or jest.length==0
@@ -314,6 +313,7 @@ module.exports = EditorBackground =
       imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
       base64Data = imageData.replace(/^data:image\/png;base64,/, "");
       filename = atom.packages.resolvePackagePath('editor-background')+"/blur.png"
+      filename = filename.replace /\\/gi,'/'
       fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
       imageData=filename+'?timestamp'+Date.now();
     else
