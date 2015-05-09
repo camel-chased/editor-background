@@ -22,7 +22,6 @@ colorToArray = (str) ->
   result = result.split(',')
   result
 
-
 module.exports = EditorBackground =
   config:
     imageURL:
@@ -31,69 +30,80 @@ module.exports = EditorBackground =
       order:0
       description:"URL of your image. It can be http://...
       or just /home/yourname/image.jpg"
+    textBackground:
+      type:"color"
+      default:"rgb(0,0,0)"
+      order:1
+      description:"background color for text/code"
+    textBackgroundOpacity:
+      type:"integer"
+      default:50
+      order:2
+      description:"opacity of background under the lines 0-100"
     backgroundSize:
       type:"string"
       default:"original"
       enum:["original","100%","cover","manual"]
       description:"Background size"
-      order:1
+      order:3
     manualBackgroundSize:
       type:"string"
       default:""
       description:"'100px 100px' or '50%' try something..."
-      order:2
+      order:4
     customOverlayColor:
       type:"boolean"
       default:false
-      order:3
+      order:5
       description:"Do you want different color on top of background? check this"
     overlayColor:
       type:'color'
       default:'rgba(0,0,0,0)'
       description:"Color used to overlay background image"
-      order:4
+      order:6
     opacity:
       type:'integer'
       default:'100'
       description:"Background image visibility percent 1-100"
-      order:5
+      order:7
     treeViewOpacity:
       type:'integer'
       default:"35"
       description:"Tree View can be transparent too :)"
-      order:6
+      order:8
     transparentTabBar:
       type:"boolean"
       default:true
       desctiption:"Transparent background under file tabs"
-      order:7
+      order:9
     mouseFactor:
       type:"integer"
       default: 0
-      description: "move background with mouse (higher value = slower)"
-      order:8
+      description: "move background with mouse (higher value = slower)
+      try 8 or 4 for 3dbox or 20 for wallpaper"
+      order:10
     textShadow:
       type:"string"
-      #default:"0px 5px 2px rgba(0, 0, 0, 0.52)"
-      default:"0px 0px 1px rgba(0,0,0,1),0px 0px 3px #000,0px 0px 3px #000"
+      default:"0px 0px 2px rgba(0, 0, 0, 0.52)"
       description:"Add a little text shadow to code"
-      order:9
+      order:11
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:10
+      order:12
     boxDepth:
       type:"integer"
       default: 0
       minimum: 0
       maximum: 2000
+      description:"Try 500 or 1500 or something..."
     boxOpacity:
       type:"integer"
       default:30
       minimum:0
       maximum:100
-      description:"shadow opacity not box itself ;)"
+      description:"shadow opacity not box itself"
     boxRange:
       type:"integer"
       description:"this is shadow"
@@ -103,9 +113,9 @@ module.exports = EditorBackground =
     blurRadius:
       type:"integer"
       description:"0 = none"
-      default:0
+      default:50
       minimim:0
-      maximum: 80
+      maximum: 200
 
 
   packagesLoaded:false
@@ -115,6 +125,7 @@ module.exports = EditorBackground =
   state: {}
   mouseX:0
   mouseY:0
+  editorStyles:[]
 
   activate: (state) ->
     atom.config.observe 'editor-background',
@@ -168,6 +179,37 @@ module.exports = EditorBackground =
     body = document.querySelector 'body'
     body.addEventListener 'mousemove',(ev) =>  @mouseMove.apply @,[ev]
 
+  applyConfToEditor:(style) ->
+    conf = atom.config.get 'editor-background'
+    rgb=colorToArray conf.textBackground.toRGBAString()
+    opacity = (conf.textBackgroundOpacity / 100).toFixed(2)
+    console.log 'opacity',opacity
+    rgba = rgb[0]+','+rgb[1]+','+rgb[2]+','+opacity
+    linesBgCss = "
+      .line>span.source{
+        background:rgba(#{rgba});
+      }
+    "
+    style.innerText=linesBgCss
+
+  applyConfToEditors:->
+    @applyConfToEditor style for style in @editorStyles
+
+
+
+  watchEditor: (editor) ->
+    conf = atom.config.get('editor-background')
+    linesBg = document.createElement 'style'
+    linesBg.type='text/css'
+    root = editor.root[0]
+    lines = editor.root[0].querySelector('.lines')
+    lines.insertBefore linesBg,lines.firstChild
+    @editorStyles.push linesBg
+    @applyConfToEditor linesBg
+
+  watchEditors: ->
+    atom.workspaceView.eachEditorView (editor) => @watchEditor.apply @,[editor]
+
 
   initialize: ->
     @elements.body = qr 'body'
@@ -184,7 +226,7 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
-
+      @watchEditors()
       @activateMouseMove()
 
       conf=atom.config.get('editor-background')
@@ -301,6 +343,7 @@ module.exports = EditorBackground =
 
   blurImage:->
     conf = atom.config.get('editor-background')
+    @elements.image.setAttribute 'src',conf.imageURL
     applyBlur = false
     if conf.blurRadius > 0
       if @elements.image?
@@ -309,13 +352,12 @@ module.exports = EditorBackground =
         else
           setTimeout (=> @blurImage.apply @),1000
     if applyBlur
-      console.log 'applying blurr'
       imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
       base64Data = imageData.replace(/^data:image\/png;base64,/, "");
       filename = atom.packages.resolvePackagePath('editor-background')+"/blur.png"
       filename = filename.replace /\\/gi,'/'
       fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
-      imageData=filename+'?timestamp'+Date.now();
+      imageData=filename+"?timestamp="+Date.now()
     else
       imageData = conf.imageURL
     @elements.blurredImage = imageData
@@ -376,6 +418,8 @@ module.exports = EditorBackground =
       inline @elements.workspace,'background:'+newColor+' !important;'
 
       @blurImage()
+
+      @applyConfToEditors()
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
