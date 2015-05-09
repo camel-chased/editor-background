@@ -1,4 +1,7 @@
 {CompositeDisposable} = require 'atom'
+fs = require 'fs'
+blur = require './StackBlur.js'
+
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -66,7 +69,7 @@ module.exports = EditorBackground =
       order:7
     mouseFactor:
       type:"integer"
-      default: 4
+      default: 0
       description: "move background with mouse (higher value = slower)"
       order:8
     textShadow:
@@ -82,7 +85,7 @@ module.exports = EditorBackground =
       order:10
     boxDepth:
       type:"integer"
-      default: 500
+      default: 0
       minimum: 0
       maximum: 2000
     boxOpacity:
@@ -100,7 +103,7 @@ module.exports = EditorBackground =
     blurRadius:
       type:"integer"
       description:"0 = none"
-      default:"4"
+      default:0
       minimim:0
       maximum: 80
 
@@ -156,9 +159,10 @@ module.exports = EditorBackground =
 
   mouseMove: (ev) ->
     conf=atom.config.get('editor-background')
-    @mouseX=ev.pageX
-    @mouseY=ev.pageY
-    if conf.boxDepth>0 then @updateBox() else @updateBgPos()
+    if conf.mouseFactor > 0
+      @mouseX=ev.pageX
+      @mouseY=ev.pageY
+      if conf.boxDepth>0 then @updateBox() else @updateBgPos()
 
 
   activateMouseMove: ->
@@ -181,7 +185,17 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
+
+      @activateMouseMove()
+
       conf=atom.config.get('editor-background')
+
+      @elements.image = document.createElement 'img'
+      @elements.image.id='editor-background-image'
+      @elements.image.setAttribute 'src',conf.imageURL
+
+      @elements.blurredImage = conf.imageURL
+
       if conf.mouseFactor>0 then @activateMouseMove()
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
@@ -189,8 +203,7 @@ module.exports = EditorBackground =
       @appendCss()
 
       @elements.boxStyle = @createBox()
-
-      @elements.bg = document.createElement('div')
+      @elements.bg = document.createElement 'div'
       @elements.bg.style.cssText="position:absolute;width:100%;height:100%;"
       @elements.body.insertBefore @elements.bg,@elements.body.childNodes[0]
 
@@ -218,7 +231,7 @@ module.exports = EditorBackground =
     conf=atom.config.get('editor-background')
     if not depth? then depth = conf.boxDepth
     depth2 = depth // 2
-    background=conf.imageURL
+    background=@elements.blurredImage
     opacity=(conf.boxOpacity / 100).toFixed(2)
     range=conf.boxRange
     range2=range // 3
@@ -237,6 +250,7 @@ module.exports = EditorBackground =
     .eb-box-wrapper{
       perspective:1000px;
       perspective-origin:#{x}px #{y}px;
+      backface-visibility: hidden;
       position:fixed;
       top:0;
       left:0;
@@ -248,7 +262,9 @@ module.exports = EditorBackground =
       transform-origin:50% 50%;
       box-shadow:inset 0px 0px #{range}px rgba(0,0,0,#{opacity}),
                   inset 0px 0px #{range2}px rgba(0,0,0,#{opacity});
-      background:url(#{background});
+      background-image:url('#{background}');
+      background-size:#{bgSize};
+      backface-visibility: hidden;
     }
     .eb-left,.eb-right{
       width:#{depth}px;
@@ -259,7 +275,7 @@ module.exports = EditorBackground =
       height:#{depth}px;
     }
     .eb-left{
-      transform: translate3d(-50%,0,0) rotateY(90deg);
+      transform: translate3d(-50%,0,0) rotateY(-90deg);
       left:0;
     }
     .eb-top{
@@ -271,12 +287,11 @@ module.exports = EditorBackground =
       right:0;
     }
     .eb-bottom{
-      transform: translate3d(0,50%,0) rotateX(-90deg);
+      transform: translate3d(0,50%,0) rotateX(90deg);
       bottom:0;
     }
     .eb-back{
       transform: translate3d(0,0,-#{depth2}px);
-      background-size:#{bgSize};
       width:100%;
       height:100%;
     }
@@ -284,6 +299,30 @@ module.exports = EditorBackground =
     @elements.boxStyle.innerText = boxCss
     if depth==0
       @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
+
+  blurImage:->
+    conf = atom.config.get('editor-background')
+    applyBlur = false
+    if conf.blurRadius > 0
+      if @elements.image?
+        if @elements.image.complete
+            applyBlur = true
+        else
+          setTimeout (=> @blurImage.apply @),1000
+    if applyBlur
+      console.log 'applying blurr'
+      imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
+      base64Data = imageData.replace(/^data:image\/png;base64,/, "");
+      filename = atom.packages.resolvePackagePath('editor-background')+"/blur.png"
+      fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
+      imageData=filename+'?timestamp'+Date.now();
+    else
+      imageData = conf.imageURL
+    @elements.blurredImage = imageData
+    if conf.boxDepth > 0
+      @updateBox()
+    else
+      inline @elements.bg,"background-image: url('#{imageData}') !important"
 
   applyBackground: ->
     atom.workspaceView.addClass 'editor-background'
@@ -308,8 +347,6 @@ module.exports = EditorBackground =
         newColor = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha+')'
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
 
-      bgImage = 'url('+conf.imageURL+')'
-      inline @elements.bg,'background-image:'+bgImage+' !important;'
 
       if conf.textShadow
         @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+
@@ -338,10 +375,7 @@ module.exports = EditorBackground =
 
       inline @elements.workspace,'background:'+newColor+' !important;'
 
-      if conf.boxDepth==0
-        inline @elements.bg,'-webkit-filter: blur('+conf.blurRadius+'px)'
-      else
-        inline @elements.bg,'-webkit-filter: blur(0px)'
+      @blurImage()
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
