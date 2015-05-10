@@ -219,63 +219,116 @@ module.exports = EditorBackground =
   applyConfToEditors: ->
     @applyConfToEditor style for style in @editorStyles
 
+  drawIsWaiting:false
 
-
-  drawTextBackground:(event,editor)->
+  drawTextBackground:(event,editor,wait)->
     if editor?
-      conf = atom.config.get 'editor-background'
-      rgb=colorToArray conf.textBackground.toRGBAString()
-      opacity = (conf.textBackgroundOpacity / 100).toFixed(2)
-      if opacity > 0
-        @textBackground.style.display='block'
-        rgba = rgb[0]+','+rgb[1]+','+rgb[2]+',0.25'
-        rgb = rgb[0]+','+rgb[1]+','+rgb[2]
+      #console.log 'drawIsWaiting:',@drawIsWaiting
+      if @drawIsWaiting==false
+        if wait
+          @drawIsWaiting=true
+          setTimeout (=>@drawTextBackgroundRun.apply @,[event,editor]),500
+        else
+          @drawTextBackgroundRun event,editor
 
-        view = editor
-        #console.log 'view',view
-        #console.log 'event',event
-        editor = editor.editor
-        range = editor.getVisibleRowRange()
-        first = range[0]
-        last = range[1]
-        buff = editor.displayBuffer
-        height = editor.getLineHeightInPixels()
-        w = editor.getWidth()
-        h = (last-first)*height
-        if w? and h?
-          @setCanvasSize w,h
-          eView= atom.workspaceView.getActiveView()
-          if eView?
-            if eView[0]?
-              leftPos = eView[0].getBoundingClientRect().left
-              gutterWidth=view.gutter[0].offsetWidth
-              leftPos+=gutterWidth-editor.getScrollLeft()
-              #console.log 'leftPos',leftPos
-              @textBackground.style.left = leftPos+'px'
-              firstLine = editor.getFirstVisibleScreenRow()
-              firstLineTop = editor.pixelPositionForBufferPosition([firstLine,0]).top
-              if view.element.offsetParent?
-                editorTop=view.element.offsetParent.offsetTop
-              else
-                editorTop=0
-              topPos=firstLineTop - editor.getScrollTop()+editorTop
-              #console.log 'topPos',topPos
-              @textBackground.style.top = topPos+'px'
-          top = 0
-          charWidth = editor.getDefaultCharWidth()
-          @frontContext.fillStyle="rgba(#{rgb},#{opacity})"
-          for lineNumber in [first..last]
-            line=editor.lineTextForBufferRow(lineNumber)
-            if line?
-              if line.length>0
-                indent = editor.indentationForBufferRow(lineNumber)
-                offsetLeft=(indent*editor.getTabLength())*charWidth
-                left = buff.pixelPositionForBufferPosition([lineNumber,0]).left+offsetLeft-charWidth
-                right = buff.pixelPositionForBufferPosition([lineNumber,line.length-1]).left+(charWidth*2)
-                @frontContext.fillRect left,top,right-left,height
-            top+=height
-      else
-          @textBackground.style.display='none'
+  calculateRegion: (event,buffer)->
+    if @frontBuffer?
+      start=event.start
+      end=event.end
+      range=buffer.getVisibleRowRange()
+      if start>=range[0] and end<=range[1]
+        height=buffer.getLineHeightInPixels()
+        width=@frontBuffer.width
+        start_left_top=buffer.pixelPositionForBufferPosition([range[0],0])
+        left_top = buffer.pixelPositionForBufferPosition([start,0])
+        right_bottom = buffer.pixelPositionForBufferPosition([end,0])
+        #console.log left_top.top-right_bottom.top
+        x_=0
+        y_=left_top.top-start_left_top.top
+        w_=width
+        h_=right_bottom.top-left_top.top+height
+        region = {x_,y_,w_,h_}
+        #console.log 'region',region
+        region
+
+  drawTextBackgroundRun:(event,editor)->
+    @drawIsWaiting=false
+    if editor?
+      activeEditor=atom.workspaceView.getActiveView()[0]
+      if editor.element == activeEditor
+        conf = atom.config.get 'editor-background'
+        rgb=colorToArray conf.textBackground.toRGBAString()
+        opacity = (conf.textBackgroundOpacity / 100).toFixed(2)
+        if opacity > 0 and @textBackground?
+          textBlur=conf.textBackgroundBlurRadius
+          @textBackground.style.webkitFilter="blur(#{textBlur}px)"
+          @textBackground.style.display='block'
+          rgba = rgb[0]+','+rgb[1]+','+rgb[2]+',0.25'
+          rgb = rgb[0]+','+rgb[1]+','+rgb[2]
+
+          view = editor
+          editor = editor.editor
+          #console.log view
+          range = editor.getVisibleRowRange()
+          first = range[0]
+          last = range[1]
+          buff = editor.displayBuffer
+          height = editor.getLineHeightInPixels()
+          w = editor.getWidth()
+          h = (last-first)*height
+          if w? and h?
+            @setCanvasSize w,h
+            eView= atom.workspaceView.getActiveView()
+            if eView?
+              if eView[0]?
+                leftPos = eView[0].getBoundingClientRect().left
+                gutterWidth=view.gutter[0].offsetWidth
+                leftPos+=gutterWidth-editor.getScrollLeft()
+                #console.log 'leftPos',leftPos
+                @textBackground.style.left = leftPos+'px'
+                firstLine = editor.getFirstVisibleScreenRow()
+                firstLineTop = editor.pixelPositionForBufferPosition([firstLine,0]).top
+                if view.element.offsetParent?
+                  editorTop=view.element.offsetParent.offsetTop
+                else
+                  editorTop=0
+                topPos=firstLineTop - editor.getScrollTop()+editorTop
+                #console.log 'topPos',topPos
+                @textBackground.style.top = topPos+'px'
+            top = 0
+            charWidth = editor.getDefaultCharWidth()
+            @frontContext.fillStyle="rgba(#{rgb},#{opacity})"
+            #console.log 'drawing...'
+            x_=0
+            y_=0
+            w_=w
+            h_=h
+
+            if event.change?
+              region=@calculateRegion event.change,buff
+              if event.change.start>=range[0] and event.change.end<=range[1]
+                first=event.change.start
+                last=event.change.end
+                top=(first-range[0])*height
+              if region?
+                {x_,y_,w_,h_}=region
+                @frontContext.clearRect( 0, y_, w_, h_)
+            else
+              @frontContext.clearRect( 0, 0, w, h)
+            for lineNumber in [first..last]
+              line=editor.lineTextForBufferRow(lineNumber)
+              if line?
+                if line.length>0
+                  indent = editor.indentationForBufferRow(lineNumber)
+                  offsetLeft=(indent*editor.getTabLength())*charWidth
+                  left = buff.pixelPositionForBufferPosition([lineNumber,0]).left+offsetLeft-charWidth
+                  right = buff.pixelPositionForBufferPosition([lineNumber,line.length-1]).left+(charWidth*2)
+                  @frontContext.fillRect left,top,right-left,height
+              top+=height
+            #if @frontBuffer?
+              #blur.stackBlurCanvasRGBA @frontBuffer,x_,y_,w_,h_,textBlur
+        else
+            @textBackground.style.display='none'
 
   watchEditor: (editor) ->
     conf = atom.config.get('editor-background')
@@ -288,26 +341,28 @@ module.exports = EditorBackground =
     @applyConfToEditor linesBg
     ed = editor.editor
     @editor.lineHeight = ed.getLineHeightInPixels()
-    ed.onDidChange (e)=> @drawTextBackground.apply @,[e,editor]
+    ed.onDidChange (e)=> @drawTextBackground.apply @,[{change:e},editor,true]
+    #ed.onDidStopChanging (e)=> @drawTextBackground.apply @,[e,editor,true]
     ed.onDidChangeScrollTop (e)=> @drawTextBackground.apply @,[{scrollTop:e},editor]
     ed.onDidChangeScrollLeft (e)=> @drawTextBackground.apply @,[{scrollLeft:e},editor]
-
+    if editor?
+      if editor.editor?
+        atom.workspace.onDidChangeActivePaneItem (e)=> @drawTextBackground.apply @,[{paneItem:e},editor,true]
 
   watchEditors: ->
     atom.workspaceView.eachEditorView (editor) => @watchEditor.apply @,[editor]
 
 
   setCanvasSize: (w,h)->
-    @frontBuffer.style.width  = w + "px"
-    @frontBuffer.style.height = h + "px"
-    @frontBuffer.width = w
-    @frontBuffer.height = h
+    if w!=@frontBuffer.width or h!=@frontBuffer.height
+      @frontBuffer.style.width  = w + "px"
+      @frontBuffer.style.height = h + "px"
+      @frontBuffer.width = w
+      @frontBuffer.height = h
     @backBuffer.style.width  = w + "px"
     @backBuffer.style.height = h + "px"
     @backBuffer.width = w
     @backBuffer.height = h
-    @frontContext.clearRect( 0, 0, w, h )
-    @backContext.clearRect( 0, 0, w, h )
 
   initCanvas: (w,h) ->
     @frontBuffer = document.createElement 'canvas'
@@ -318,11 +373,11 @@ module.exports = EditorBackground =
     @backContext = @backBuffer.getContext("2d")
     @textBackground = document.createElement 'div'
     @textBackground.id = 'editor-background-text'
+    blurRadius=atom.config.get('editor-background.textBackgroundBlurRadius')
     @textBackground.style.cssText="
       position:absolute;
       left:70px;
       top:34px;
-      -webkit-filter:blur(15px);
       -webkit-transform: translate3d(0, 0, 0);
       transform: translate3d(0,0,0);
     "
