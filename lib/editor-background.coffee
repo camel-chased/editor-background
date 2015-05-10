@@ -189,7 +189,6 @@ module.exports = EditorBackground =
     linesBgCss = "
       .line>span.source{
         background:rgba(#{rgba});
-        padding-right:13px;
       }
     "
     style.innerText=linesBgCss
@@ -198,21 +197,46 @@ module.exports = EditorBackground =
     @applyConfToEditor style for style in @editorStyles
 
 
-  cursorPosChanged:(event,editor)->
-
-
-  editorChanged:(event,editor)->
+  editorChanged:(editor)->
+    view = editor
+    editor = editor.editor
+    console.log view
     range = editor.getVisibleRowRange()
     first = range[0]
     last = range[1]
     buff = editor.displayBuffer
-    console.log buff
+    height = editor.getLineHeightInPixels()
+    w = editor.getWidth()
+    h = (last-first)*height
+    canvas = document.createElement 'canvas'
+    canvas_back = document.createElement 'canvas'
+    canvas.style.width  = w + "px"
+    canvas.style.height = h + "px"
+    canvas.width = w
+    canvas.height = h
+    canvas_back.style.width  = w + "px"
+    canvas_back.style.height = h + "px"
+    canvas_back.width = w
+    canvas_back.height = h
+    context = canvas.getContext("2d")
+    context.clearRect( 0, 0, w, h )
+    context_back = canvas_back.getContext("2d")
+    context_back.clearRect( 0, 0, w, h )
+    top = 0
     for lineNumber in [first..last]
       line=editor.lineTextForBufferRow(lineNumber)
-      indent = editor.indentationForBufferRow(lineNumber)
-
-
-
+      if line.length>0
+        indent = editor.indentationForBufferRow(lineNumber)
+        left = buff.pixelPositionForBufferPosition([lineNumber,indent]).left
+        right = buff.pixelPositionForBufferPosition([lineNumber,indent+line.length-1]).left
+        context_back.fillRect left,top,right-left,height
+      top+=height
+    blur.stackBlurCanvasRGBA canvas_back,0,0,w,h,10
+    imageData = context_back.getImageData(0,0,w,h)
+    context.putImageData(imageData,0,0)
+    bc = view.element.querySelector '.blurContainer'
+    bc.innerText=''
+    bc.appendChild canvas
 
   watchEditor: (editor) ->
     conf = atom.config.get('editor-background')
@@ -224,10 +248,14 @@ module.exports = EditorBackground =
     @editorStyles.push linesBg
     @applyConfToEditor linesBg
     ed = editor.editor
+    console.log editor
     @editor.lineHeight = ed.getLineHeightInPixels()
-    console.log 'lineHeight: ',@editor.lineHeight
-    ed.onDidChange (e)=> @editorChanged.apply @,[e,ed]
-    ed.onDidChangeCursorPosition (e)=>@cursorPosChanged.apply @,[e,ed]
+    blurContainer = document.createElement 'div'
+    blurContainer.setAttribute 'class','blurContainer'
+    editor.element.insertBefore blurContainer,editor.element.firstChild
+    #ed.onDidChange (e)=> @editorChanged.apply @,[e,editor]
+    setTimeout (=>@editorChanged.apply @,[editor]),2000
+
 
 
   watchEditors: ->
@@ -371,12 +399,12 @@ module.exports = EditorBackground =
     if conf.blurRadius > 0
       if @elements.image?
         if @elements.image.complete
-            applyBlur = true
+          applyBlur = true
         else
           setTimeout (=> @blurImage.apply @),1000
     if applyBlur
       imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
-      base64Data = imageData.replace(/^data:image\/png;base64,/, "");
+      base64Data = imageData.replace(/^data:image\/png;base64,/, "")
       filename = atom.packages.resolvePackagePath('editor-background')+"/blur.png"
       filename = filename.replace /\\/gi,'/'
       fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
