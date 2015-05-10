@@ -37,82 +37,81 @@ module.exports = EditorBackground =
       description:"background color for text/code"
     textBackgroundOpacity:
       type:"integer"
-      default:75
+      default:100
       order:2
-      description:"opacity of background under the lines 0-100, (can slow down ide :/ but look fantastic)"
+      description:"[0-100] look really nice, but it consume a lot of CPU :/ (0 to turn off)"
+    textBackgroundBlurRadius:
+      type:"integer"
+      default:20
+      order:3
+      description:"higher value = higher CPU usage"
     backgroundSize:
       type:"string"
       default:"original"
       enum:["original","100%","cover","manual"]
       description:"Background size"
-      order:3
+      order:4
     manualBackgroundSize:
       type:"string"
       default:""
       description:"'100px 100px' or '50%' try something..."
-      order:4
+      order:5
     customOverlayColor:
       type:"boolean"
       default:false
-      order:5
+      order:6
       description:"Do you want different color on top of background? check this"
     overlayColor:
       type:'color'
       default:'rgba(0,0,0,0)'
       description:"Color used to overlay background image"
-      order:6
+      order:7
     opacity:
       type:'integer'
       default:'100'
       description:"Background image visibility percent 1-100"
-      order:7
+      order:8
     treeViewOpacity:
       type:'integer'
       default:"35"
       description:"Tree View can be transparent too :)"
-      order:8
+      order:9
     transparentTabBar:
       type:"boolean"
       default:true
       desctiption:"Transparent background under file tabs"
-      order:9
+      order:10
     mouseFactor:
       type:"integer"
       default: 0
       description: "move background with mouse (higher value = slower)
       try 8 or 4 for 3dbox or 20 for wallpaper"
-      order:10
+      order:11
     textShadow:
       type:"string"
       default:"0px 2px 2px rgba(0,0,0,0.3)"
       description:"Add a little text shadow to code"
-      order:11
+      order:12
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:12
+      order:13
     boxDepth:
       type:"integer"
       default: 0
       minimum: 0
       maximum: 2000
-      description:"Try 500 or 1500 or something..."
-    boxOpacity:
+      description:"This is pseudo 3D Cube. Try 500 or 1500 or something similar..."
+    boxShadowOpacity:
       type:"integer"
       default:30
       minimum:0
       maximum:100
-      description:"shadow opacity not box itself"
-    boxRange:
-      type:"integer"
-      description:"this is shadow"
-      default:300
-      minimum:0
-      maximum:1000
+      description:"shadow that exists in every corner of the box"
     blurRadius:
       type:"integer"
-      description:"0 = none"
+      description:"Background image blur. 0 = none"
       default:50
       minimim:0
       maximum: 200
@@ -312,6 +311,8 @@ module.exports = EditorBackground =
 
   initCanvas: (w,h) ->
     @frontBuffer = document.createElement 'canvas'
+    @frontBuffer.style.cssText="-webkit-transform:translate3d(0,0,0);
+    transform:translate3d(0,0,0)"
     @backBuffer = document.createElement 'canvas'
     @frontContext = @frontBuffer.getContext("2d")
     @backContext = @backBuffer.getContext("2d")
@@ -322,6 +323,8 @@ module.exports = EditorBackground =
       left:70px;
       top:34px;
       -webkit-filter:blur(15px);
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0,0,0);
     "
     @textBackground.appendChild @frontBuffer
     body = document.querySelector 'body'
@@ -392,7 +395,7 @@ module.exports = EditorBackground =
     depth2 = depth // 2
     background=@elements.blurredImage
     opacity=(conf.boxOpacity / 100).toFixed(2)
-    range=conf.boxRange
+    range=300
     range2=range // 3
     bgSize=conf.backgroundSize
     if bgSize=='manual' then bgSize=conf.manualBackgroundSize
