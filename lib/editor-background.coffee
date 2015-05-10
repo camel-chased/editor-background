@@ -37,9 +37,9 @@ module.exports = EditorBackground =
       description:"background color for text/code"
     textBackgroundOpacity:
       type:"integer"
-      default:50
+      default:75
       order:2
-      description:"opacity of background under the lines 0-100"
+      description:"opacity of background under the lines 0-100, (can slow down ide :/ but look fantastic)"
     backgroundSize:
       type:"string"
       default:"original"
@@ -184,20 +184,37 @@ module.exports = EditorBackground =
     conf = atom.config.get 'editor-background'
     rgb=colorToArray conf.textBackground.toRGBAString()
     opacity = (conf.textBackgroundOpacity / 100).toFixed(2)
-    console.log 'opacity',opacity
-    rgba = rgb[0]+','+rgb[1]+','+rgb[2]+','+opacity
-    linesBgCss = "
-      .line>span.source{
-        background:rgba(#{rgba});
-      }
-    "
+    if opacity > 0
+      rgba = rgb[0]+','+rgb[1]+','+rgb[2]+',0.25'
+      rgb = rgb[0]+','+rgb[1]+','+rgb[2]
+      linesBgCss = "
+        .line>span{
+          background:rgba(#{rgba});
+          position:relative;
+        }
+        .line>span:before{
+          content:'';
+          opacity:#{opacity};
+          position:absolute;
+          padding:20px;
+          top:-10px;
+          width:100%;
+          height:100%;
+          background:rgb(#{rgb});
+          border-radius:10px;
+          -webkit-filter:blur(20px);
+          z-index:-1;
+        }
+      "
+    else
+      linesBgCss=''
     style.innerText=linesBgCss
 
   applyConfToEditors: ->
     @applyConfToEditor style for style in @editorStyles
 
 
-  editorChanged:(editor)->
+  editorChanged:(event,editor)->
     view = editor
     editor = editor.editor
     console.log view
@@ -225,20 +242,23 @@ module.exports = EditorBackground =
     top = 0
     for lineNumber in [first..last]
       line=editor.lineTextForBufferRow(lineNumber)
-      if line.length>0
-        indent = editor.indentationForBufferRow(lineNumber)
-        left = buff.pixelPositionForBufferPosition([lineNumber,indent]).left
-        right = buff.pixelPositionForBufferPosition([lineNumber,indent+line.length-1]).left
-        context_back.fillRect left,top,right-left,height
+      if line?
+        if line.length>0
+          indent = editor.indentationForBufferRow(lineNumber)
+          left = buff.pixelPositionForBufferPosition([lineNumber,indent]).left
+          right = buff.pixelPositionForBufferPosition([lineNumber,indent+line.length-1]).left
+          context_back.fillRect left,top,right-left,height
       top+=height
-    blur.stackBlurCanvasRGBA canvas_back,0,0,w,h,10
+    #blur.stackBlurCanvasRGBA canvas_back,0,0,w,h,10
     imageData = context_back.getImageData(0,0,w,h)
     context.putImageData(imageData,0,0)
     bc = view.element.querySelector '.blurContainer'
     bc.innerText=''
     bc.appendChild canvas
+    console.log canvas.toDataURL('image/png')
 
   watchEditor: (editor) ->
+    console.log 'we have new editor...',editor
     conf = atom.config.get('editor-background')
     linesBg = document.createElement 'style'
     linesBg.type='text/css'
@@ -254,7 +274,7 @@ module.exports = EditorBackground =
     blurContainer.setAttribute 'class','blurContainer'
     editor.element.insertBefore blurContainer,editor.element.firstChild
     #ed.onDidChange (e)=> @editorChanged.apply @,[e,editor]
-    setTimeout (=>@editorChanged.apply @,[editor]),2000
+    #setTimeout (=>@editorChanged.apply @,[editor]),2000
 
 
 
@@ -278,7 +298,7 @@ module.exports = EditorBackground =
 
     if loaded.length == keys.length
       @watchEditors()
-      @activateMouseMove()
+      #@activateMouseMove()
 
       conf=atom.config.get('editor-background')
 
