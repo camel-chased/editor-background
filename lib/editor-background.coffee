@@ -190,10 +190,75 @@ module.exports = EditorBackground =
     @elements.body.insertBefore main,@elements.body.firstChild
 
   insertTextBackground:->
-    txtBg = document.createElement 'style'
-    txtBg.type="text/css"
-    @elements.textBackground=txtBg
+    # CSS for background text
+    txtBgCss = document.createElement 'style'
+    txtBgCss.type="text/css"
+    txtBgCss.cssText="
+      .editor-background-line{
+        background:black;
+        color:white;
+      }
+    "
+    @elements.textBackgroundCss=txtBgCss
+    @elements.main.appendChild txtBgCss
+    # container of the background text
+    txtBg = document.createElement 'div'
+    txtBg.style.cssText="
+      position:absolute;
+      z-index:-1;
+    "
+    @elements.textBackground = txtBg
     @elements.main.appendChild txtBg
+
+  drawLine: (tokenizedLine) ->
+    line = document.createElement 'div'
+    line.className = 'editor-background-line line'
+    line.innerText = tokenizedLine.text
+    @elements.textBackground.appendChild line
+
+  drawLines: (attrs) ->
+    if attrs?
+      if attrs.editorRect? && attrs.screenLines?
+        @elements.textBackground.innerText = ''
+        @elements.textBackground.style.cssText="
+        top:#{attrs.editorRect.top}px;
+        left:#{attrs.editorRect.left}px;
+        right:#{attrs.editorRect.right}px;
+        bottom:#{attrs.editorRect.bottom}px;
+        position:absolute;
+        z-index:-1;
+        "
+        @drawLine line for line in attrs.screenLines
+
+  drawBackground: (event)->
+    console.log 'event',event
+    activeEditor = atom.workspace.getActiveEditor()
+    displayBuffer = activeEditor.displayBuffer
+    actualLines = displayBuffer.getVisibleRowRange()
+    screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
+    activePane = atom.workspaceView.getActivePane()[0]
+    editorElement = activePane.querySelector 'atom-text-editor'
+    if editorElement?
+      editorRect = editorElement.getBoundingClientRect()
+      attrs =
+        {
+          editorElement:editorElement,
+          editorRect:editorRect,
+          screenLines:screenLines.screenLines
+        }
+      @drawLines attrs
+
+
+  watchEditor:(editor)->
+    console.log 'editor :)',editor
+    editor.onDidChangeScrollTop (scroll)=>@drawBackground.apply @,[{scrollTop:scroll}]
+    editor.onDidChangeScrollLeft (scroll)=>@drawBackground.apply @,[{scrolLeft:scroll}]
+    editor.onDidChange (change)=>@drawBackground.apply @,[{change:change}]
+
+
+  watchEditors: ->
+    atom.workspace.observeTextEditors (editor)=>@watchEditor.apply @,[editor]
+    
 
   initialize: ->
     @elements.body = qr 'body'
@@ -210,9 +275,11 @@ module.exports = EditorBackground =
     loaded = (@elements[k] for k in keys when @elements[k]?)
 
     if loaded.length == keys.length
+
       @insertMain()
       @insertTextBackground()
       @activateMouseMove()
+      @watchEditors()
 
       conf=atom.config.get('editor-background')
 
@@ -251,41 +318,6 @@ module.exports = EditorBackground =
     x = (offsetX // factor)
     y = (offsetY // factor)
     inline @elements.bg,"background-position:#{x}px #{y}px !important;"
-
-  applyConfToEditors:->
-    txtBgCss="
-      .editor-background atom-text-editor::shadow .line>span{
-        position:relative;
-        overflow:visible;
-      }
-      .editor-background atom-text-editor::shadow .line>span:not(.invisible-character):not(.indent-guide):before{
-        position:absolute;
-        content:'';
-        height:80px;
-        top:-30px;
-        z-index:-1;
-        width:100%;
-        background:url(atom://editor-background/images/repeat-x.png);
-        background-size:100% 100%;
-        transform:translate3d(0,0,0);
-        perspective:1000px;
-      }
-      .editor-background atom-text-editor::shadow .line>span:not(.invisible-character):not(.indent-guide):after{
-        position:absolute;
-        content:'';
-        height:80px;
-        top:-30px;
-        left:100%;
-        z-index:-1;
-        width:45px;
-        background:url(atom://editor-background/images/right.png);
-        background-size:100% 100%;
-        transform:translate3d(0,0,0);
-        perspective:1000px;
-      }
-
-    "
-    @elements.textBackground.innerText=txtBgCss
 
   updateBox: (depth) ->
     conf=atom.config.get('editor-background')
@@ -437,8 +469,6 @@ module.exports = EditorBackground =
       inline @elements.workspace,'background:'+newColor+' !important;'
 
       @blurImage()
-
-      @applyConfToEditors()
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
