@@ -220,13 +220,21 @@ module.exports = EditorBackground =
     if attrs?
       if attrs.editorRect? && attrs.screenLines?
         @elements.textBackground.innerText = ''
+        editorSettings = atom.config.settings.editor
+        fontFamily = editorSettings.fontFamily
+        fontSize = editorSettings.fontSize
         @elements.textBackground.style.cssText="
         top:#{attrs.editorRect.top}px;
         left:#{attrs.editorRect.left}px;
         right:#{attrs.editorRect.right}px;
         bottom:#{attrs.editorRect.bottom}px;
         position:absolute;
-        z-index:-1;
+        z-index:1;
+        font-family:#{fontFamily};
+        font-size:#{fontSize}px;
+        color:gray;
+        pointer-events:none;
+        opacity:0.5;
         "
         @drawLine line for line in attrs.screenLines
 
@@ -238,6 +246,7 @@ module.exports = EditorBackground =
     screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
     activePane = atom.workspaceView.getActivePane()[0]
     editorElement = activePane.querySelector 'atom-text-editor'
+    console.log displayBuffer
     if editorElement?
       editorRect = editorElement.getBoundingClientRect()
       attrs =
@@ -258,7 +267,7 @@ module.exports = EditorBackground =
 
   watchEditors: ->
     atom.workspace.observeTextEditors (editor)=>@watchEditor.apply @,[editor]
-    
+
 
   initialize: ->
     @elements.body = qr 'body'
