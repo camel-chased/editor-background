@@ -192,6 +192,7 @@ module.exports = EditorBackground =
     main = document.createElement 'div'
     main.id='editor-background-main'
     @elements.main=main
+    document.querySelector '#editor-background-main'.remove
     @elements.body.insertBefore main,@elements.body.firstChild
 
   insertTextBackgroundCss:->
