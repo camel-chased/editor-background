@@ -6,7 +6,13 @@ blur = require './StackBlur.js'
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
 inline = (element,style) -> element.style.cssText += style
-
+escapeHTML = (text) ->
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
 
 planeInitialCss =
   "position:absolute;
@@ -221,14 +227,15 @@ module.exports = EditorBackground =
         @getOffset element.offsetParent, offset
       else
         offset
-    
+
 
   drawLine: (tokenizedLine,attrs) ->
     line = document.createElement 'div'
     line.className = 'editor-background-line'
     text = tokenizedLine.buildText().trim()
+    text = escapeHTML(text)
     text = text.replace(/[\s]{1}/gi,'<span class="editor-background-white"></span>');
-    #text = text.replace(/[\t]{1}/gi,'<span class="editor-background-tab"></span>');
+    text = text.replace(/[\t]{1}/gi,'<span class="editor-background-tab"></span>');
     line.innerHTML = text
     marginLeft = tokenizedLine.indentLevel * tokenizedLine.tabLength * attrs.charWidth
     line.style.cssText = "
@@ -249,7 +256,6 @@ module.exports = EditorBackground =
           left = offset.left
           right = left + scrollView.width
           bottom = top + scrollView.height
-          opacity = 0.5;
           activeEditor = attrs.activeEditor
           displayBuffer = attrs.displayBuffer
           lineHeight = attrs.lineHeight
@@ -262,6 +268,10 @@ module.exports = EditorBackground =
           if !fontFamily? then fontFamily = defaultSettings.fontFamily
           if !fontSize? then fontSize = defaultSettings.fontSize
           css = @elements.textBackgroundCss
+          conf = atom.config.get('editor-background')
+          textBlur = conf.textBackgroundBlurRadius
+          opacity = (conf.textBackgroundOpacity/100).toFixed(2)
+          color = conf.textBackground.toRGBAString()
           css.innerText="
             .editor-background-line{
               font-family:'#{fontFamily}';
@@ -269,7 +279,7 @@ module.exports = EditorBackground =
               height:#{lineHeight}px;
               display:block;
               color:transparent;
-              background:red;
+              background:#{color};
               width:auto;
               transform:translate3d(0,0,0);
               float:left;
@@ -294,13 +304,14 @@ module.exports = EditorBackground =
           pointer-events:none;
           opacity:#{opacity};
           transform:translate3d(0,0,0);
+          -webkit-filter:blur(#{textBlur}px);
           "
           attrsForward = {
             charWidth:charWidth
           }
           for line in attrs.screenLines
             @drawLine line,attrsForward
-       
+
 
   activeEditor:{}
 
@@ -311,27 +322,28 @@ module.exports = EditorBackground =
       return
     activeEditor = @activeEditor
     displayBuffer = activeEditor.displayBuffer
-    actualLines = displayBuffer.getVisibleRowRange()
-    screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
-    scrollTop = displayBuffer.getScrollTop()
-    lineHeight = displayBuffer.getLineHeightInPixels()
-    offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
-    editorElement = atom.views.getView(activeEditor)
-    if editorElement?
-      if editorElement.constructor.name == 'atom-text-editor'
-        editorRect = editorElement.getBoundingClientRect()
-        attrs =
-          {
-            editorElement:editorElement
-            activeEditor:activeEditor
-            lineHeight:lineHeight
-            displayBuffer:displayBuffer
-            screenLines:screenLines.screenLines
-            offsetTop:offsetTop
-            scrollTop:scrollTop
-            visibleBuffer: actualLines
-          }
-        @drawLines attrs
+    if displayBuffer?
+      actualLines = displayBuffer.getVisibleRowRange()
+      screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
+      scrollTop = displayBuffer.getScrollTop()
+      lineHeight = displayBuffer.getLineHeightInPixels()
+      offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
+      editorElement = atom.views.getView(activeEditor)
+      if editorElement?
+        if editorElement.constructor.name == 'atom-text-editor'
+          editorRect = editorElement.getBoundingClientRect()
+          attrs =
+            {
+              editorElement:editorElement
+              activeEditor:activeEditor
+              lineHeight:lineHeight
+              displayBuffer:displayBuffer
+              screenLines:screenLines.screenLines
+              offsetTop:offsetTop
+              scrollTop:scrollTop
+              visibleBuffer: actualLines
+            }
+          @drawLines attrs
 
   watchEditor:(editor)->
     editor.onDidChangeScrollTop (scroll)=>@drawBackground.apply @,[{scrollTop:scroll},editor]
