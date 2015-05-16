@@ -7,6 +7,7 @@ qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
 inline = (element,style) -> element.style.cssText += style
 
+
 planeInitialCss =
   "position:absolute;
   left:0;
@@ -210,64 +211,137 @@ module.exports = EditorBackground =
     @elements.textBackground = txtBg
     @elements.main.appendChild txtBg
 
-  drawLine: (tokenizedLine) ->
+  getOffset: (element, offset) ->
+    {left:0,top:0}
+    if element?
+      if !offset? then offset = {left:0,top:0}
+      offset.left += element.offsetLeft
+      offset.top += element.offsetTop
+      if element.offsetParent?
+        @getOffset element.offsetParent, offset
+      else
+        offset
+    
+
+  drawLine: (tokenizedLine,attrs) ->
     line = document.createElement 'div'
-    line.className = 'editor-background-line line'
-    line.innerText = tokenizedLine.text
+    line.className = 'editor-background-line'
+    text = tokenizedLine.buildText().trim()
+    text = text.replace(/[\s]{1}/gi,'<span class="editor-background-white"></span>');
+    #text = text.replace(/[\t]{1}/gi,'<span class="editor-background-tab"></span>');
+    line.innerHTML = text
+    marginLeft = tokenizedLine.indentLevel * tokenizedLine.tabLength * attrs.charWidth
+    line.style.cssText = "
+      margin-left:#{marginLeft}px;
+    "
     @elements.textBackground.appendChild line
 
   drawLines: (attrs) ->
     if attrs?
-      if attrs.editorRect? && attrs.screenLines?
+      if attrs.editorElement? && attrs.screenLines?
         @elements.textBackground.innerText = ''
-        editorSettings = atom.config.settings.editor
-        fontFamily = editorSettings.fontFamily
-        fontSize = editorSettings.fontSize
-        @elements.textBackground.style.cssText="
-        top:#{attrs.editorRect.top}px;
-        left:#{attrs.editorRect.left}px;
-        right:#{attrs.editorRect.right}px;
-        bottom:#{attrs.editorRect.bottom}px;
-        position:absolute;
-        z-index:1;
-        font-family:#{fontFamily};
-        font-size:#{fontSize}px;
-        color:gray;
-        pointer-events:none;
-        opacity:0.5;
-        "
-        @drawLine line for line in attrs.screenLines
+        editor = attrs.editorElement
+        if editor.constructor.name == 'atom-text-editor'
+          root = editor.shadowRoot
+          scrollView = root.querySelector '.scroll-view'
+          offset = @getOffset scrollView
+          top = offset.top - attrs.offsetTop
+          left = offset.left
+          right = left + scrollView.width
+          bottom = top + scrollView.height
+          opacity = 0.5;
+          activeEditor = attrs.activeEditor
+          displayBuffer = attrs.displayBuffer
+          lineHeight = attrs.lineHeight
+          charWidth = displayBuffer.getDefaultCharWidth()
+          tabWidth = displayBuffer.getTabLength() * charWidth
+          editorSettings = atom.config.settings.editor
+          defaultSettings = atom.config.defaultSettings
+          fontFamily = editorSettings.fontFamily
+          fontSize = editorSettings.fontSize
+          if !fontFamily? then fontFamily = defaultSettings.fontFamily
+          if !fontSize? then fontSize = defaultSettings.fontSize
+          css = @elements.textBackgroundCss
+          css.innerText="
+            .editor-background-line{
+              font-family:'#{fontFamily}';
+              font-size:#{fontSize}px;
+              height:#{lineHeight}px;
+              display:block;
+              color:transparent;
+              background:red;
+              width:auto;
+              transform:translate3d(0,0,0);
+              float:left;
+              clear:both;
+            }
+            .editor-background-white{
+              width:#{charWidth}px;
+              display:inline-block;
+            }
+            .editor-background-tab{
+              width:#{tabWidth}px;
+              display:inline-block;
+            }
+          "
+          @elements.textBackground.style.cssText="
+          top:#{top}px;
+          left:#{left}px;
+          right:#{right}px;
+          bottom:#{bottom}px;
+          position:absolute;
+          z-index:0;
+          pointer-events:none;
+          opacity:#{opacity};
+          transform:translate3d(0,0,0);
+          "
+          attrsForward = {
+            charWidth:charWidth
+          }
+          for line in attrs.screenLines
+            @drawLine line,attrsForward
+       
 
-  drawBackground: (event)->
-    console.log 'event',event
-    activeEditor = atom.workspace.getActiveEditor()
+  activeEditor:{}
+
+  drawBackground: (event,editor)->
+    if event?.active?
+      @activeEditor=editor
+      process.nextTick =>@drawBackground.apply @,[]
+      return
+    activeEditor = @activeEditor
     displayBuffer = activeEditor.displayBuffer
     actualLines = displayBuffer.getVisibleRowRange()
     screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
-    activePane = atom.workspaceView.getActivePane()[0]
-    editorElement = activePane.querySelector 'atom-text-editor'
-    console.log displayBuffer
+    scrollTop = displayBuffer.getScrollTop()
+    lineHeight = displayBuffer.getLineHeightInPixels()
+    offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
+    editorElement = atom.views.getView(activeEditor)
     if editorElement?
-      editorRect = editorElement.getBoundingClientRect()
-      attrs =
-        {
-          editorElement:editorElement,
-          editorRect:editorRect,
-          screenLines:screenLines.screenLines
-        }
-      @drawLines attrs
-
+      if editorElement.constructor.name == 'atom-text-editor'
+        editorRect = editorElement.getBoundingClientRect()
+        attrs =
+          {
+            editorElement:editorElement
+            activeEditor:activeEditor
+            lineHeight:lineHeight
+            displayBuffer:displayBuffer
+            screenLines:screenLines.screenLines
+            offsetTop:offsetTop
+            scrollTop:scrollTop
+            visibleBuffer: actualLines
+          }
+        @drawLines attrs
 
   watchEditor:(editor)->
-    console.log 'editor :)',editor
-    editor.onDidChangeScrollTop (scroll)=>@drawBackground.apply @,[{scrollTop:scroll}]
-    editor.onDidChangeScrollLeft (scroll)=>@drawBackground.apply @,[{scrolLeft:scroll}]
-    editor.onDidChange (change)=>@drawBackground.apply @,[{change:change}]
+    editor.onDidChangeScrollTop (scroll)=>@drawBackground.apply @,[{scrollTop:scroll},editor]
+    editor.onDidChangeScrollLeft (scroll)=>@drawBackground.apply @,[{scrolLeft:scroll},editor]
+    editor.onDidChange (change)=>@drawBackground.apply @,[{change:change},editor]
 
 
   watchEditors: ->
     atom.workspace.observeTextEditors (editor)=>@watchEditor.apply @,[editor]
-
+    atom.workspace.observeActivePaneItem (editor)=>@drawBackground.apply @,[{active:editor},editor]
 
   initialize: ->
     @elements.body = qr 'body'
@@ -286,9 +360,7 @@ module.exports = EditorBackground =
     if loaded.length == keys.length
 
       @insertMain()
-      @insertTextBackground()
       @activateMouseMove()
-      @watchEditors()
 
       conf=atom.config.get('editor-background')
 
@@ -308,6 +380,9 @@ module.exports = EditorBackground =
       @elements.bg = document.createElement 'div'
       @elements.bg.style.cssText="position:absolute;width:100%;height:100%;"
       @elements.main.appendChild @elements.bg
+
+      @insertTextBackground()
+      @watchEditors()
 
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
