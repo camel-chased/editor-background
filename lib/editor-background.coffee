@@ -46,12 +46,10 @@ module.exports = EditorBackground =
       type:"integer"
       default:100
       order:2
-      description:"[0-100] look really nice, but it consume a lot of CPU :/ (0 to turn off)"
     textBackgroundBlurRadius:
       type:"integer"
       default:20
       order:3
-      description:"higher value = higher CPU usage"
     backgroundSize:
       type:"string"
       default:"original"
