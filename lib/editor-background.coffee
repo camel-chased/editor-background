@@ -194,7 +194,7 @@ module.exports = EditorBackground =
     @elements.main=main
     @elements.body.insertBefore main,@elements.body.firstChild
 
-  insertTextBackground:->
+  insertTextBackgroundCss:->
     # CSS for background text
     txtBgCss = document.createElement 'style'
     txtBgCss.type="text/css"
@@ -206,6 +206,8 @@ module.exports = EditorBackground =
     "
     @elements.textBackgroundCss=txtBgCss
     @elements.main.appendChild txtBgCss
+
+  insertTextBackground:->
     # container of the background text
     txtBg = document.createElement 'div'
     txtBg.style.cssText="
@@ -236,6 +238,7 @@ module.exports = EditorBackground =
     text = text.replace(/[\t]{1}/gi,'<span class="editor-background-tab"></span>');
     line.innerHTML = text
     marginLeft = tokenizedLine.indentLevel * tokenizedLine.tabLength * attrs.charWidth
+    marginLeft -= attrs.scrollLeft
     line.style.cssText = "
       margin-left:#{marginLeft}px;
     "
@@ -247,12 +250,18 @@ module.exports = EditorBackground =
         @elements.textBackground.innerText = ''
         editor = attrs.editorElement
         if editor.constructor.name == 'atom-text-editor'
+
+          conf = atom.config.get('editor-background')
+          textBlur = conf.textBackgroundBlurRadius
+          opacity = (conf.textBackgroundOpacity/100).toFixed(2)
+          color = conf.textBackground.toRGBAString()
+
           root = editor.shadowRoot
           scrollView = root.querySelector '.scroll-view'
           offset = @getOffset scrollView
           top = offset.top - attrs.offsetTop
           left = offset.left
-          right = left + scrollView.width
+          right = left + scrollView.width + textBlur
           bottom = top + scrollView.height
           activeEditor = attrs.activeEditor
           displayBuffer = attrs.displayBuffer
@@ -266,10 +275,7 @@ module.exports = EditorBackground =
           if !fontFamily? then fontFamily = defaultSettings.fontFamily
           if !fontSize? then fontSize = defaultSettings.fontSize
           css = @elements.textBackgroundCss
-          conf = atom.config.get('editor-background')
-          textBlur = conf.textBackgroundBlurRadius
-          opacity = (conf.textBackgroundOpacity/100).toFixed(2)
-          color = conf.textBackground.toRGBAString()
+
           css.innerText="
             .editor-background-line{
               font-family:'#{fontFamily}';
@@ -298,6 +304,7 @@ module.exports = EditorBackground =
           right:#{right}px;
           bottom:#{bottom}px;
           position:absolute;
+          overflow:hidden;
           z-index:0;
           pointer-events:none;
           opacity:#{opacity};
@@ -306,6 +313,7 @@ module.exports = EditorBackground =
           "
           attrsForward = {
             charWidth:charWidth
+            scrollLeft:attrs.scrollLeft
           }
           for line in attrs.screenLines
             @drawLine line,attrsForward
@@ -324,6 +332,7 @@ module.exports = EditorBackground =
       actualLines = displayBuffer.getVisibleRowRange()
       screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
       scrollTop = displayBuffer.getScrollTop()
+      scrollLeft = displayBuffer.getScrollLeft()
       lineHeight = displayBuffer.getLineHeightInPixels()
       offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
       editorElement = atom.views.getView(activeEditor)
@@ -339,6 +348,7 @@ module.exports = EditorBackground =
               screenLines:screenLines.screenLines
               offsetTop:offsetTop
               scrollTop:scrollTop
+              scrollLeft:scrollLeft
               visibleBuffer: actualLines
             }
           @drawLines attrs
@@ -380,19 +390,22 @@ module.exports = EditorBackground =
 
       @elements.blurredImage = conf.imageURL
 
+      @insertTextBackgroundCss()
+
       if conf.mouseFactor>0 then @activateMouseMove()
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.main.appendChild @elements.plane
       @appendCss()
 
+
+      @watchEditors()
+
       @elements.boxStyle = @createBox()
       @elements.bg = document.createElement 'div'
       @elements.bg.style.cssText="position:absolute;width:100%;height:100%;"
       @elements.main.appendChild @elements.bg
-
       @insertTextBackground()
-      @watchEditors()
 
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
