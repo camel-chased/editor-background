@@ -37,77 +37,83 @@ module.exports = EditorBackground =
       order:0
       description:"URL of your image. It can be http://...
       or just /home/yourname/image.jpg"
+    youTubeURL:
+      type:'string'
+      default:''
+      order:1
+      description:"paste youtube render video loop url here to have animation"
     textBackground:
       type:"color"
       default:"rgb(0,0,0)"
-      order:1
+      order:2
       description:"background color for text/code"
     textBackgroundOpacity:
       type:"integer"
       default:100
-      order:2
+      order:3
     textBackgroundBlurRadius:
       type:"integer"
       default:20
-      order:3
+      order:4
     backgroundSize:
       type:"string"
       default:"original"
       enum:["original","100%","cover","manual"]
       description:"Background size"
-      order:4
+      order:5
     manualBackgroundSize:
       type:"string"
       default:""
       description:"'100px 100px' or '50%' try something..."
-      order:5
+      order:6
     customOverlayColor:
       type:"boolean"
       default:false
-      order:6
+      order:7
       description:"Do you want different color on top of background? check this"
     overlayColor:
       type:'color'
       default:'rgba(0,0,0,0)'
       description:"Color used to overlay background image"
-      order:7
+      order:8
     opacity:
       type:'integer'
       default:'100'
       description:"Background image visibility percent 1-100"
-      order:8
+      order:9
     treeViewOpacity:
       type:'integer'
       default:"35"
       description:"Tree View can be transparent too :)"
-      order:9
+      order:10
     transparentTabBar:
       type:"boolean"
       default:true
       desctiption:"Transparent background under file tabs"
-      order:10
+      order:11
     mouseFactor:
       type:"integer"
       default: 0
       description: "move background with mouse (higher value = slower)
       try 8 or 4 for 3dbox or 20 for wallpaper"
-      order:11
+      order:12
     textShadow:
       type:"string"
       default:"0px 2px 2px rgba(0,0,0,0.3)"
       description:"Add a little text shadow to code"
-      order:12
+      order:13
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:13
+      order:14
     boxDepth:
       type:"integer"
       default: 0
       minimum: 0
       maximum: 2000
-      description:"This is pseudo 3D Cube. Try 500 or 1500 or something similar..."
+      description:"This is pseudo 3D Cube. Try 500 or 1500 or
+      something similar..."
     boxShadowOpacity:
       type:"integer"
       default:30
@@ -218,6 +224,18 @@ module.exports = EditorBackground =
     @elements.textBackground = txtBg
     @elements.main.appendChild txtBg
 
+  generateYTid: (url) ->
+    if url!=''
+      ytreg = /// (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)
+      |youtu\.be\/)([^"&?\/ ]{11}) ///i
+      ytid=ytreg.exec(url)
+
+  startYouTube: ->
+    conf = atom.config.get 'editor-background'
+    if conf.youTubeURL? != ''
+      ytid = @generateYTid conf.youTubeURL
+      console.log ytid
+
   getOffset: (element, offset) ->
     {left:0,top:0}
     if element?
@@ -235,10 +253,13 @@ module.exports = EditorBackground =
     line.className = 'editor-background-line'
     text = tokenizedLine.buildText().trim()
     text = escapeHTML(text)
-    text = text.replace(/[\s]{1}/gi,'<span class="editor-background-white"></span>');
-    text = text.replace(/[\t]{1}/gi,'<span class="editor-background-tab"></span>');
+    text = text.replace(/[\s]{1}/gi,
+      '<span class="editor-background-white"></span>')
+    text = text.replace(/[\t]{1}/gi,
+      '<span class="editor-background-tab"></span>')
     line.innerHTML = text
-    marginLeft = tokenizedLine.indentLevel * tokenizedLine.tabLength * attrs.charWidth
+    marginLeft = tokenizedLine.indentLevel *
+      tokenizedLine.tabLength * attrs.charWidth
     marginLeft -= attrs.scrollLeft
     line.style.cssText = "
       margin-left:#{marginLeft}px;
@@ -322,10 +343,22 @@ module.exports = EditorBackground =
 
   activeEditor:{}
 
+  removeBgLines:->
+    @elements.textBackground.innerText=''
+
   drawBackground: (event,editor)->
+    # no editors left
+    if event?.destroy?
+      if event.destroy.pane.items.length==0
+        @removeBgLines()
+        return
+    # changed active editor
     if event?.active?
       @activeEditor=editor
-      process.nextTick =>@drawBackground.apply @,[]
+      if editor?
+        process.nextTick =>@drawBackground.apply @,[]
+      else
+        @removeBgLines()
       return
     activeEditor = @activeEditor
     displayBuffer = activeEditor.displayBuffer
@@ -355,14 +388,21 @@ module.exports = EditorBackground =
           @drawLines attrs
 
   watchEditor:(editor)->
-    editor.onDidChangeScrollTop (scroll)=>@drawBackground.apply @,[{scrollTop:scroll},editor]
-    editor.onDidChangeScrollLeft (scroll)=>@drawBackground.apply @,[{scrolLeft:scroll},editor]
-    editor.onDidChange (change)=>@drawBackground.apply @,[{change:change},editor]
+    editor.onDidChangeScrollTop (scroll)=>
+      @drawBackground.apply @,[{scrollTop:scroll},editor]
+    editor.onDidChangeScrollLeft (scroll)=>
+      @drawBackground.apply @,[{scrolLeft:scroll},editor]
+    editor.onDidChange (change)=>
+      @drawBackground.apply @,[{change:change},editor]
 
 
   watchEditors: ->
-    atom.workspace.observeTextEditors (editor)=>@watchEditor.apply @,[editor]
-    atom.workspace.observeActivePaneItem (editor)=>@drawBackground.apply @,[{active:editor},editor]
+    atom.workspace.observeTextEditors (editor)=>
+      @watchEditor.apply @,[editor]
+    atom.workspace.observeActivePaneItem (editor)=>
+      @drawBackground.apply @,[{active:editor},editor]
+    atom.workspace.onDidDestroyPaneItem (pane)=>
+      @drawBackground.apply @,[{destroy:pane}]
 
   initialize: ->
     @elements.body = qr 'body'
@@ -513,7 +553,8 @@ module.exports = EditorBackground =
     if applyBlur
       imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
       base64Data = imageData.replace(/^data:image\/png;base64,/, "")
-      filename = atom.packages.resolvePackagePath('editor-background')+"/blur.png"
+      filename = atom.packages.resolvePackagePath('editor-background')+
+      "/blur.png"
       filename = filename.replace /\\/gi,'/'
       fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
       imageData=filename+"?timestamp="+Date.now()
@@ -577,6 +618,9 @@ module.exports = EditorBackground =
       inline @elements.workspace,'background:'+newColor+' !important;'
 
       @blurImage()
+
+      # Youtube
+      @startYouTube()
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
