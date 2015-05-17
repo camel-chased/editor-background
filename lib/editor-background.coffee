@@ -2,8 +2,7 @@
 fs = require 'fs'
 blur = require './StackBlur.js'
 youtubedl = require 'youtube-dl'
-gif_ = require './gif.js'
-GIF=gif_.GIF
+GIFEncoder = require 'gifencoder'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -54,7 +53,7 @@ module.exports = EditorBackground =
       type:'string'
       default:''
       order:1
-      description:"paste youtube render video loop url here to have animation"
+      description:"WARNING!!! NOT FINISHED YET - WORK IN PROGRESS"
     textBackground:
       type:"color"
       default:"rgb(0,0,0)"
@@ -250,71 +249,118 @@ module.exports = EditorBackground =
         ytid=ytidregres[1]
 
   timer:{}
-  gif:{}
+  frames:[]
+  videoWidth:0
+  videoHeight:0
+  playing:true
 
-  capture: ->
-    video = @elements.video
-    console.log "capturing"
-    @gif.addFrame video, {copy: true, delay: 100}
+  getFrame:(canvas,ctx,video,w,h)->
+    console.log 'getting frame'
+    ctx.drawImage video,0,0
+    video.pause()
+    @elements.encoder.addFrame ctx
+    video.play()
+    if @playing
+      setTimeout =>
+        @getFrame canvas,ctx,video,w,h
+      , 50
+    #@frames.push canvas.toDataURL 'image/png'
 
-  decodeVideo:->
+
+
+  getImages: ->
+    @playing=true
+    console.log 'getting images...'
     video = @elements.video
     canvas = @elements.videoCanvas
+    context = canvas.getContext("2d")
+    @elements.encoder.start()
+    w = @videoWidth
+    h = @videoHeight
+    @getFrame canvas,context,video,w,h
+    ###
+    @timer = setInterval =>
+      @getFrame.apply @,[canvas,context,video,w,h]
+    , 100
+    ###
 
-    @gif = new GIF
-      workers: 4
-      workerScript: @elements.libPath+'gif.worker.js'
-      width: 640
-      height: 480
-      quality: 1
 
-    @gif.on 'progress', (p) ->
-      console.log "rendering: #{ Math.round(p * 100) }%"
+  getImagesDone:->
+    @playing=false
+    #clearInterval @timer
+    @elements.encoder.finish()
+    console.log 'done',@frames.length
+    ytid = @elements.ytid
+    ###
+    imagesFolder = @elements.videoPath+ytid+'_images/'
+    try
+      fs.mkdirSync imagesFolder,0o777
+    catch error
+      console.log error
+    i = 0
+    for frame in @frames
+      base64 = frame.replace(/^data:image\/png;base64,/, "")
+      try
+        fs.writeFileSync imagesFolder+i+'.png',base64,'base64'
+      catch
+        console.log error
+      i++
 
-    @gif.on 'finished', (blob) =>
-      dataURL = URL.createObjectURL(blob)
-      console.log 'gif finished',dataURL,blob
-      blobToBase64 blob, (base64)=>
-        videoPath = @elements.videoPath
-        ytid = @getYTId atom.config.get('editor-background.youTubeURL')
-        try
-          fs.writeFileSync videoPath+ytid+'.gif',base64,'base64'
-        catch error
-          console.log error
+    ###
 
-    video.addEventListener 'play', =>
-      console.log 'playing'
-      clearInterval @timer
-      @timer =
-      setInterval =>
-        @capture.apply @,[]
-      , 100
+    gifPath = @elements.videoPath+ytid+'.gif'
+    buf = @elements.encoder.out.getData()
+    fs.writeFile gifPath, buf, (err) =>
+      @elements.videoCanvas.remove()
+      @elements.video.remove()
+      delete @elements.encoder
+      @elements.image.src = gifPath
+      atom.config.set('editor-background.blurRadius',0)
+      atom.config.set('editor-background.imageURL',gifPath)
 
-    video.addEventListener 'ended', =>
-      clearInterval @timer
-      @gif.render()
+  playVideo:->
+    console.log 'playing video...'
+    @getImages()
 
-    @gif.abort()
-    @gif.frames = []
-    video.play()
+  decodeVideo:->
+    console.log 'decoding video',@elements.video
+    @frames = []
+    video = @elements.video
+    ###
+    video.addEventListener 'play',=>
+      @getImages()
+    ###
+    video.addEventListener 'ended',=>
+      @getImagesDone()
+    video.addEventListener 'canplay',=>
+      @playVideo()
+
 
   insertVideo: (savePath) ->
     data = fs.readFileSync savePath
-    ###
+
     videoCanvas = document.createElement 'canvas'
-    videoCanvas.widht = "100%"
-    videoCanvas.height = "100%"
+    videoWidth = @videoWidth
+    videoHeight = @videoHeight
+    encoder = new GIFEncoder @videoWidth,@videoHeight
+    encoder.setQuality 5
+    encoder.setDelay 100
+    encoder.setRepeat 0
+    @elements.encoder = encoder
+    videoCanvas.width = videoWidth
+    videoCanvas.height = videoHeight
     videoCanvas.id = "editor-background-videoCanvas"
     videoCanvas.style.cssText = "
     position:absolute;
     top:0px;
     left:0px;
-    width:100%;
-    height:100%;
+    display:none;
+    width:#{videoWidth}px;
+    height:#{videoHeight}px;
     "
     @elements.videoCanvas = videoCanvas
     @elements.main.insertBefore videoCanvas,@elements.textBackground
-    ###
+
     video = document.createElement 'video'
     source = document.createElement 'source'
     @elements.video =  video
@@ -322,8 +368,6 @@ module.exports = EditorBackground =
     video.appendChild source
     source.type="video/"+@elements.videoFormat
     source.src = savePath
-    video.width="100%"
-    video.height="100%"
     video.style.cssText="
     position:absolute;
     left:0;
@@ -339,6 +383,7 @@ module.exports = EditorBackground =
     videoFormat = @elements.videoFormat
     if url != ''
       ytid = @getYTId url
+      @elements.ytid = ytid
       savePath = @elements.videoPath+ytid+videoExt
       alreadyExists = false
 
@@ -351,9 +396,11 @@ module.exports = EditorBackground =
       if not alreadyExists
         video = youtubedl url,['--format='+videoFormat],{ cwd: __dirname }
         size = 0
-        video.on 'info', (info)->
+        video.on 'info', (info)=>
           console.log 'Download started'
           console.log info
+          @videoWidth = info.width
+          @videoHeight = info.height
           size = info.size
         pos=0
         video.on 'data', (data) =>
@@ -363,8 +410,6 @@ module.exports = EditorBackground =
             console.log 'downloaded'
             @insertVideo.apply @,[savePath]
         video.pipe fs.createWriteStream(savePath)
-      else
-        @insertVideo savePath
     else
       @removeVideo()
 
