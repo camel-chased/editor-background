@@ -1,7 +1,8 @@
 {CompositeDisposable} = require 'atom'
 fs = require 'fs'
 blur = require './StackBlur.js'
-
+youtubedl = require 'youtube-dl'
+gif = require './gif.js'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -37,6 +38,11 @@ module.exports = EditorBackground =
       order:0
       description:"URL of your image. It can be http://...
       or just /home/yourname/image.jpg"
+    youTubeURL:
+      type:'string'
+      default:''
+      order:1
+      description:"paste youtube render video loop url here to have animation"
     textBackground:
       type:"color"
       default:"rgb(0,0,0)"
@@ -139,6 +145,8 @@ module.exports = EditorBackground =
      (conf) => @applyBackground.apply @,[conf]
     atom.config.observe 'editor-background.imageURL',(url)=>
       @blurImage.apply @,[url]
+    atom.config.observe 'editor-background.youTubeURL',(url) =>
+      @startYouTube.apply @,[url]
     @initialize()
 
   appendCss: () ->
@@ -220,6 +228,99 @@ module.exports = EditorBackground =
     "
     @elements.textBackground = txtBg
     @elements.main.appendChild txtBg
+
+  getYTId: (url) ->
+    if url!=''
+      ytreg = /// (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)
+      |youtu\.be\/)([^"&?\/ ]{11}) ///i
+      ytidregres=ytreg.exec(url)
+      if ytidregres?.length>0
+        ytid=ytidregres[1]
+
+
+  runVideo:(image)->
+    gif = document.createElement 'div'
+    gif.style.cssText="
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    background:url(#{image});
+    background-size:cover;
+    "
+    @elements.gif = gif
+    @elements.main.insertBefore gif,@elements.textBackground
+
+  convertToGif: (ytid) ->
+    return
+    videoPath = @elements.videoPath+ytid+'.webm'
+    gifPath = @elements.videoPath+ytid+'.gif'
+    console.log 'converting to gif',ytid
+    if gifshot.isExistingVideoGIFSupported ['webm']
+      gifshot.createGIF {
+        'video': [videoPath],
+        'progressCallback': (progress)->
+          console.log 'progress',progress
+        'completeCallback': ->
+          console.log 'converting finished'
+      },(obj) =>
+        if !obj.error?
+          console.log 'image',obj
+          image = obj.image
+          @runVideo.apply @,[image]
+    else
+      console.log 'cant make gif :('
+
+  downloadYTVideo: (url)->
+    if url != ''
+      ytid = @getYTId url
+      savePath = @elements.videoPath+ytid+'.webm'
+      gifPath = @elements.videoPath+ytid+'.gif'
+      alreadyExists = false
+
+      try
+        downloaded = fs.statSync(savePath)
+        alreadyExists = downloaded.isFile()
+      catch error
+        console.log error
+
+      if not alreadyExists
+        video = youtubedl url,['--format=webm'],{ cwd: __dirname }
+        size = 0
+        video.on 'info', (info)->
+          console.log 'Download started'
+          console.log 'filename: ' + info._filename
+          console.log 'size: ' + info.size
+          size = info.size
+        pos=0
+        video.on 'data', (data) =>
+          pos += data.length
+          console.log pos,size
+          if pos==size
+            console.log 'downloaded'
+            @convertToGif.apply @,[ytid]
+        video.pipe fs.createWriteStream(savePath)
+      else
+        @convertToGif ytid
+    else
+      @removeVideo()
+
+  removeVideo:->
+    if @elements.gif?
+      @elements.gif.remove()
+
+  startYouTube: ->
+    if @packagesLoaded
+      @removeVideo()
+      conf = atom.config.get 'editor-background'
+      if conf.youTubeURL? != ''
+        @downloadYTVideo conf.youTubeURL
+      else
+        @removeVideo()
+    else
+      setTimeout (=>@startYouTube.apply @,[]),1000
+
 
 
   getOffset: (element, offset) ->
@@ -439,6 +540,12 @@ module.exports = EditorBackground =
       @packagesLoaded = true
 
       @blurImage()
+      @elements.videoPath=atom.packages.resolvePackagePath('editor-background')+
+        '/youtube-videos/'
+      try
+        fs.mkdirSync @elements.videoPath,0o777
+      catch error
+
       @applyBackground.apply @
     else
       setTimeout (=>@initialize.apply @),1000
