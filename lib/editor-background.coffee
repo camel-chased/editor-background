@@ -37,11 +37,6 @@ module.exports = EditorBackground =
       order:0
       description:"URL of your image. It can be http://...
       or just /home/yourname/image.jpg"
-    youTubeURL:
-      type:'string'
-      default:''
-      order:1
-      description:"paste youtube render video loop url here to have animation"
     textBackground:
       type:"color"
       default:"rgb(0,0,0)"
@@ -144,8 +139,6 @@ module.exports = EditorBackground =
      (conf) => @applyBackground.apply @,[conf]
     atom.config.observe 'editor-background.imageURL',(url)=>
       @blurImage.apply @,[url]
-    atom.config.observe 'editor-background.youTubeURL',(url) =>
-      @startYouTube.apply @,[url]
     @initialize()
 
   appendCss: () ->
@@ -227,54 +220,6 @@ module.exports = EditorBackground =
     "
     @elements.textBackground = txtBg
     @elements.main.appendChild txtBg
-
-  generateYTid: (url) ->
-    if url!=''
-      ytreg = /// (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)
-      |youtu\.be\/)([^"&?\/ ]{11}) ///i
-      ytidregres=ytreg.exec(url)
-      if ytidregres?.length>0
-        ytid=ytidregres[1]
-
-  insertYouTube:(ytid) ->
-    @elements.ytid = ytid
-    iframe = document.createElement 'iframe'
-    @elements.iframe = iframe
-    iframe.width="100%"
-    iframe.height="100%"
-    iframe.frameBorder="0"
-    iframe.style.cssText="
-    position:absolute;
-    top:0px;
-    left:0px;
-    width:100%;
-    height:100%;
-    "
-    src = "https://www.youtube.com/embed/"
-    src+=ytid
-    src+="?rel=0&controls=0&showinfo=0&autoplay=1&loop=1&disablekb=1&iv_load_policy=3&playlist="+ytid
-    iframe.src = src
-    @elements.main.insertBefore iframe,@elements.textBackground
-
-
-  removeYouTube:->
-    if @elementa.iframe?
-      @elements.iframe.remove()
-
-  startYouTube: ->
-    if @packagesLoaded
-      conf = atom.config.get 'editor-background'
-      if conf.youTubeURL? != ''
-        ytid = @generateYTid conf.youTubeURL
-        if ytid?
-          if @elements.ytid? and ytid!=@elements.ytid
-            @removeYouTube()
-          @insertYouTube(ytid)
-      else
-        @removeYouTube()
-    else
-      setTimeout (=>@startYouTube.apply @,[]),1000
-
 
 
   getOffset: (element, offset) ->
