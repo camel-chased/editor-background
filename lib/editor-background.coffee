@@ -2,7 +2,8 @@
 fs = require 'fs'
 blur = require './StackBlur.js'
 youtubedl = require 'youtube-dl'
-gif = require './gif.js'
+gif_ = require './gif.js'
+GIF=gif_.GIF
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -14,6 +15,17 @@ escapeHTML = (text) ->
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;")
+
+blobToBase64 = (blob, cb) ->
+  reader = new FileReader()
+  reader.onload = ->
+    dataUrl = reader.result
+    base64 = dataUrl.split(',')[1]
+    cb(base64)
+  reader.readAsDataURL(blob)
+
+
+
 
 planeInitialCss =
   "position:absolute;
@@ -237,46 +249,97 @@ module.exports = EditorBackground =
       if ytidregres?.length>0
         ytid=ytidregres[1]
 
+  timer:{}
+  gif:{}
 
-  runVideo:(image)->
-    gif = document.createElement 'div'
-    gif.style.cssText="
+  capture: ->
+    video = @elements.video
+    console.log "capturing"
+    @gif.addFrame video, {copy: true, delay: 100}
+
+  decodeVideo:->
+    video = @elements.video
+    canvas = @elements.videoCanvas
+
+    @gif = new GIF
+      workers: 4
+      workerScript: @elements.libPath+'gif.worker.js'
+      width: 640
+      height: 480
+      quality: 1
+
+    @gif.on 'progress', (p) ->
+      console.log "rendering: #{ Math.round(p * 100) }%"
+
+    @gif.on 'finished', (blob) =>
+      dataURL = URL.createObjectURL(blob)
+      console.log 'gif finished',dataURL,blob
+      blobToBase64 blob, (base64)=>
+        videoPath = @elements.videoPath
+        ytid = @getYTId atom.config.get('editor-background.youTubeURL')
+        try
+          fs.writeFileSync videoPath+ytid+'.gif',base64,'base64'
+        catch error
+          console.log error
+
+    video.addEventListener 'play', =>
+      console.log 'playing'
+      clearInterval @timer
+      @timer =
+      setInterval =>
+        @capture.apply @,[]
+      , 100
+
+    video.addEventListener 'ended', =>
+      clearInterval @timer
+      @gif.render()
+
+    @gif.abort()
+    @gif.frames = []
+    video.play()
+
+  insertVideo: (savePath) ->
+    data = fs.readFileSync savePath
+    ###
+    videoCanvas = document.createElement 'canvas'
+    videoCanvas.widht = "100%"
+    videoCanvas.height = "100%"
+    videoCanvas.id = "editor-background-videoCanvas"
+    videoCanvas.style.cssText = "
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:100%;
+    height:100%;
+    "
+    @elements.videoCanvas = videoCanvas
+    @elements.main.insertBefore videoCanvas,@elements.textBackground
+    ###
+    video = document.createElement 'video'
+    source = document.createElement 'source'
+    @elements.video =  video
+    @elements.source = source
+    video.appendChild source
+    source.type="video/"+@elements.videoFormat
+    source.src = savePath
+    video.width="100%"
+    video.height="100%"
+    video.style.cssText="
     position:absolute;
     left:0;
     top:0;
     width:100%;
     height:100%;
-    background:url(#{image});
-    background-size:cover;
     "
-    @elements.gif = gif
-    @elements.main.insertBefore gif,@elements.textBackground
-
-  convertToGif: (ytid) ->
-    return
-    videoPath = @elements.videoPath+ytid+'.webm'
-    gifPath = @elements.videoPath+ytid+'.gif'
-    console.log 'converting to gif',ytid
-    if gifshot.isExistingVideoGIFSupported ['webm']
-      gifshot.createGIF {
-        'video': [videoPath],
-        'progressCallback': (progress)->
-          console.log 'progress',progress
-        'completeCallback': ->
-          console.log 'converting finished'
-      },(obj) =>
-        if !obj.error?
-          console.log 'image',obj
-          image = obj.image
-          @runVideo.apply @,[image]
-    else
-      console.log 'cant make gif :('
+    @elements.main.insertBefore video,@elements.textBackground
+    @decodeVideo()
 
   downloadYTVideo: (url)->
+    videoExt = @elements.videoExt
+    videoFormat = @elements.videoFormat
     if url != ''
       ytid = @getYTId url
-      savePath = @elements.videoPath+ytid+'.webm'
-      gifPath = @elements.videoPath+ytid+'.gif'
+      savePath = @elements.videoPath+ytid+videoExt
       alreadyExists = false
 
       try
@@ -286,12 +349,11 @@ module.exports = EditorBackground =
         console.log error
 
       if not alreadyExists
-        video = youtubedl url,['--format=webm'],{ cwd: __dirname }
+        video = youtubedl url,['--format='+videoFormat],{ cwd: __dirname }
         size = 0
         video.on 'info', (info)->
           console.log 'Download started'
-          console.log 'filename: ' + info._filename
-          console.log 'size: ' + info.size
+          console.log info
           size = info.size
         pos=0
         video.on 'data', (data) =>
@@ -299,10 +361,10 @@ module.exports = EditorBackground =
           console.log pos,size
           if pos==size
             console.log 'downloaded'
-            @convertToGif.apply @,[ytid]
+            @insertVideo.apply @,[savePath]
         video.pipe fs.createWriteStream(savePath)
       else
-        @convertToGif ytid
+        @insertVideo savePath
     else
       @removeVideo()
 
@@ -542,6 +604,10 @@ module.exports = EditorBackground =
       @blurImage()
       @elements.videoPath=atom.packages.resolvePackagePath('editor-background')+
         '/youtube-videos/'
+      @elements.libPath=atom.packages.resolvePackagePath('editor-background')+
+      '/lib/'
+      @elements.videoExt = '.mp4'
+      @elements.videoFormat = 'mp4'
       try
         fs.mkdirSync @elements.videoPath,0o777
       catch error
