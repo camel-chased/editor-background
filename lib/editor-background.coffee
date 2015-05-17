@@ -142,6 +142,10 @@ module.exports = EditorBackground =
   activate: (state) ->
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
+    atom.config.observe 'editor-background.imageURL',(url)=>
+      @blurImage.apply @,[url]
+    atom.config.observe 'editor-background.youTubeURL',(url) =>
+      @startYouTube.apply @,[url]
     @initialize()
 
   appendCss: () ->
@@ -228,13 +232,50 @@ module.exports = EditorBackground =
     if url!=''
       ytreg = /// (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)
       |youtu\.be\/)([^"&?\/ ]{11}) ///i
-      ytid=ytreg.exec(url)
+      ytidregres=ytreg.exec(url)
+      if ytidregres?.length>0
+        ytid=ytidregres[1]
+
+  insertYouTube:(ytid) ->
+    @elements.ytid = ytid
+    iframe = document.createElement 'iframe'
+    @elements.iframe = iframe
+    iframe.width="100%"
+    iframe.height="100%"
+    iframe.frameBorder="0"
+    iframe.style.cssText="
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:100%;
+    height:100%;
+    "
+    src = "https://www.youtube.com/embed/"
+    src+=ytid
+    src+="?rel=0&controls=0&showinfo=0&autoplay=1&loop=1&disablekb=1&iv_load_policy=3&playlist="+ytid
+    iframe.src = src
+    @elements.main.insertBefore iframe,@elements.textBackground
+
+
+  removeYouTube:->
+    if @elementa.iframe?
+      @elements.iframe.remove()
 
   startYouTube: ->
-    conf = atom.config.get 'editor-background'
-    if conf.youTubeURL? != ''
-      ytid = @generateYTid conf.youTubeURL
-      console.log ytid
+    if @packagesLoaded
+      conf = atom.config.get 'editor-background'
+      if conf.youTubeURL? != ''
+        ytid = @generateYTid conf.youTubeURL
+        if ytid?
+          if @elements.ytid? and ytid!=@elements.ytid
+            @removeYouTube()
+          @insertYouTube(ytid)
+      else
+        @removeYouTube()
+    else
+      setTimeout (=>@startYouTube.apply @,[]),1000
+
+
 
   getOffset: (element, offset) ->
     {left:0,top:0}
@@ -451,6 +492,8 @@ module.exports = EditorBackground =
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       @packagesLoaded = true
+
+      @blurImage()
       @applyBackground.apply @
     else
       setTimeout (=>@initialize.apply @),1000
@@ -541,30 +584,31 @@ module.exports = EditorBackground =
       @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
   blurImage:->
-    conf = atom.config.get('editor-background')
-    @elements.image.setAttribute 'src',conf.imageURL
-    applyBlur = false
-    if conf.blurRadius > 0
-      if @elements.image?
-        if @elements.image.complete
-          applyBlur = true
-        else
-          setTimeout (=> @blurImage.apply @),1000
-    if applyBlur
-      imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
-      base64Data = imageData.replace(/^data:image\/png;base64,/, "")
-      filename = atom.packages.resolvePackagePath('editor-background')+
-      "/blur.png"
-      filename = filename.replace /\\/gi,'/'
-      fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
-      imageData=filename+"?timestamp="+Date.now()
-    else
-      imageData = conf.imageURL
-    @elements.blurredImage = imageData
-    if conf.boxDepth > 0
-      @updateBox()
-    else
-      inline @elements.bg,"background-image: url('#{imageData}') !important"
+    if @packagesLoaded
+      conf = atom.config.get('editor-background')
+      @elements.image.setAttribute 'src',conf.imageURL
+      applyBlur = false
+      if conf.blurRadius > 0
+        if @elements.image?
+          if @elements.image.complete
+            applyBlur = true
+          else
+            setTimeout (=> @blurImage.apply @),1000
+      if applyBlur
+        imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
+        base64Data = imageData.replace(/^data:image\/png;base64,/, "")
+        filename = atom.packages.resolvePackagePath('editor-background')+
+        "/blur.png"
+        filename = filename.replace /\\/gi,'/'
+        fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
+        imageData=filename+"?timestamp="+Date.now()
+      else
+        imageData = conf.imageURL
+      @elements.blurredImage = imageData
+      if conf.boxDepth > 0
+        @updateBox()
+      else
+        inline @elements.bg,"background-image: url('#{imageData}') !important"
 
   applyBackground: ->
     atom.workspaceView.addClass 'editor-background'
@@ -617,10 +661,6 @@ module.exports = EditorBackground =
 
       inline @elements.workspace,'background:'+newColor+' !important;'
 
-      @blurImage()
-
-      # Youtube
-      @startYouTube()
 
       if conf.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
