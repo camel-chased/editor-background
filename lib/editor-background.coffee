@@ -53,72 +53,84 @@ module.exports = EditorBackground =
       type:'string'
       default:''
       order:1
-      description:"WARNING!!! NOT FINISHED YET - WORK IN PROGRESS"
+      description:"WARNING!!! NOT FINISHED YET - WORK IN PROGRESS,
+      but if you are really curious try to find 'background loop' in YT"
+    startTime:
+      type:"integer"
+      default:0
+      order:2
+      description:"video start time in miliseconds ( 1s = 1000ms )"
+    endTime:
+      type:"integer"
+      default:10000
+      maximum:30000
+      description:"video end time in miliseconds (max 30 000 = 30s)"
+      order:3
     textBackground:
       type:"color"
       default:"rgb(0,0,0)"
-      order:2
+      order:4
       description:"background color for text/code"
     textBackgroundOpacity:
       type:"integer"
       default:100
-      order:3
+      order:5
     textBackgroundBlurRadius:
       type:"integer"
       default:20
-      order:4
+      order:6
     backgroundSize:
       type:"string"
       default:"original"
       enum:["original","100%","cover","manual"]
       description:"Background size"
-      order:5
+      order:7
     manualBackgroundSize:
       type:"string"
       default:""
       description:"'100px 100px' or '50%' try something..."
-      order:6
+      order:8
     customOverlayColor:
       type:"boolean"
       default:false
-      order:7
+      order:9
       description:"Do you want different color on top of background? check this"
     overlayColor:
       type:'color'
       default:'rgba(0,0,0,0)'
       description:"Color used to overlay background image"
-      order:8
+      order:10
     opacity:
       type:'integer'
       default:'100'
       description:"Background image visibility percent 1-100"
-      order:9
+      order:11
     treeViewOpacity:
       type:'integer'
       default:"35"
       description:"Tree View can be transparent too :)"
-      order:10
+      order:12
     transparentTabBar:
       type:"boolean"
       default:true
       desctiption:"Transparent background under file tabs"
-      order:11
+      order:13
     mouseFactor:
       type:"integer"
       default: 0
       description: "move background with mouse (higher value = slower)
       try 8 or 4 for 3dbox or 20 for wallpaper"
-      order:12
+      order:14
     textShadow:
       type:"string"
       default:"0px 2px 2px rgba(0,0,0,0.3)"
       description:"Add a little text shadow to code"
-      order:13
+      order:15
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:14
+      order:16
     boxDepth:
       type:"integer"
       default: 0
@@ -216,6 +228,9 @@ module.exports = EditorBackground =
     @elements.main=main
     document.querySelector '#editor-background-main'.remove
     @elements.body.insertBefore main,@elements.body.firstChild
+    @elements.modalElement = modal =document.createElement 'div'
+    modal.innerText='hahahhaha';
+    @elements.modal = atom.workspace.addModalPanel  {item:modal,visible:false}
 
   insertTextBackgroundCss:->
     # CSS for background text
@@ -250,30 +265,53 @@ module.exports = EditorBackground =
 
   timer:{}
   frames:[]
+  frame:0
   videoWidth:0
   videoHeight:0
   playing:true
 
   getFrame:(canvas,ctx,video,w,h)->
-    console.log 'getting frame'
+    @frame++
+    tick=50
+    if @frame*tick >= atom.config.get('editor-background.endTime')
+      return @getImagesDone
+    console.log 'getting frame',@frame
+    frame=@elements.modalContent.querySelector '#editor-background-frame'
+    frame.innerText=@frame
     ctx.drawImage video,0,0
     video.pause()
-    @elements.encoder.addFrame ctx
-    video.play()
-    if @playing
-      setTimeout =>
-        @getFrame canvas,ctx,video,w,h
-      , 50
-    #@frames.push canvas.toDataURL 'image/png'
+    if @frame*tick>=atom.config.get('editor-background.startTime')
+      if @playing
+        @elements.encoder.addFrame ctx
+        video.play()
+        if @playing
+          setTimeout =>
+            @getFrame.apply @,[canvas,ctx,video,w,h]
+          , 50
+        #@frames.push canvas.toDataURL 'image/png'
 
 
 
   getImages: ->
     @playing=true
+    @frame = 0
     console.log 'getting images...'
     video = @elements.video
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
+    ytid = @getYTId atom.config.get 'editor-background.youTubeURL'
+    gifPath = @elements.videoPath+ytid+'.gif'
+    content=document.createElement 'div'
+    @elements.modalContent=content
+    content.innerHTML="
+    <div id='editor-background-modal' style='overflow:hidden'>
+    Getting Frame: <span id='editor-background-frame'>0</span><br>
+    Please be patient.<a href id='editor-background-done' style='float:right;'>OK, that's it, let me see what you are doing so long...</a></div>"
+    doneBtn = content.querySelector '#editor-background-done'
+    doneBtn.addEventListener 'click',=>@getImagesDone()
+    @elements.modalElement.innerHTML=""
+    @elements.modalElement.appendChild content
+    @elements.encoder.createReadStream().pipe(fs.createWriteStream(gifPath));
     @elements.encoder.start()
     w = @videoWidth
     h = @videoHeight
@@ -308,15 +346,15 @@ module.exports = EditorBackground =
 
     ###
 
-    gifPath = @elements.videoPath+ytid+'.gif'
-    buf = @elements.encoder.out.getData()
-    fs.writeFile gifPath, buf, (err) =>
-      @elements.videoCanvas.remove()
-      @elements.video.remove()
-      delete @elements.encoder
-      @elements.image.src = gifPath
-      atom.config.set('editor-background.blurRadius',0)
-      atom.config.set('editor-background.imageURL',gifPath)
+    gifPath = @elements.videoPath+ytid+'.gif?timestamp='+Date.now()
+    @elements.videoCanvas.remove()
+    @elements.video.remove()
+    delete @elements.encoder
+    atom.config.set('editor-background.blurRadius',0)
+    atom.config.set('editor-background.imageURL',gifPath)
+    @elements.image.src = gifPath
+    @elements.modal.hide()
+
 
   playVideo:->
     console.log 'playing video...'
@@ -343,8 +381,8 @@ module.exports = EditorBackground =
     videoWidth = @videoWidth
     videoHeight = @videoHeight
     encoder = new GIFEncoder @videoWidth,@videoHeight
-    encoder.setQuality 5
-    encoder.setDelay 100
+    encoder.setQuality 20
+    encoder.setDelay 50
     encoder.setRepeat 0
     @elements.encoder = encoder
     videoCanvas.width = videoWidth
@@ -394,8 +432,9 @@ module.exports = EditorBackground =
         console.log error
 
       if not alreadyExists
-        video = youtubedl url,['--format='+videoFormat],{ cwd: __dirname }
+        video = youtubedl url,['--format='+videoFormat+'/[height <=? 720][filesize<=5M]'],{ cwd: __dirname }
         size = 0
+        @elements.modal.show()
         video.on 'info', (info)=>
           console.log 'Download started'
           console.log info
@@ -404,10 +443,14 @@ module.exports = EditorBackground =
           size = info.size
         pos=0
         video.on 'data', (data) =>
+          percent = Math.round(pos / size * 100)
+          @elements.modalElement.innerHTML="Downloading video... #{percent}%"
           pos += data.length
           console.log pos,size
           if pos==size
             console.log 'downloaded'
+
+            @elements.modalElement.innerHTML="Rendering frames..."
             @insertVideo.apply @,[savePath]
         video.pipe fs.createWriteStream(savePath)
     else
