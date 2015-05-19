@@ -431,6 +431,15 @@ module.exports = EditorBackground =
       catch error
         console.log error
 
+      try
+        dirExists = fs.statSync @elements.videoPath
+        if not dirExists.isDir()
+          fs.mkdirSync @elements.videoPath,0o777
+      catch e
+        console.log e
+        
+      
+
       if not alreadyExists
         video = youtubedl url,['--format='+videoFormat+'/[height <=? 720][filesize<=5M]'],{ cwd: __dirname }
         size = 0
