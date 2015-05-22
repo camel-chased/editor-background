@@ -3,7 +3,7 @@ fs = require 'fs'
 blur = require './StackBlur.js'
 youtubedl = require 'youtube-dl'
 animation = require './animation'
-
+yt = require './youtube'
 
 
 qr = (selector) -> document.querySelector selector
@@ -392,6 +392,11 @@ module.exports = EditorBackground =
     @decodeVideo()
 
   downloadYTVideo: (url)->
+    @yt = new yt(url)
+    @yt.getVideoInfo url,(formats)=>
+      console.log 'formats',formats
+      @yt.download 133
+    return
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
