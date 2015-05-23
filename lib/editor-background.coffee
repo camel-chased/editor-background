@@ -409,7 +409,7 @@ module.exports = EditorBackground =
       @yt.on 'done',=>
         console.log 'download complete'
       @yt.on 'ready',=>
-        @yt.download {filename:savePath,itag:134} 
+        @yt.download {filename:savePath,itag:135,start:'10s',end:'20s'} 
 
       @yt.getVideoInfo()
       return 

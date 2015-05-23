@@ -6,7 +6,7 @@ itag_formats = require './formats.js'
 class YouTube
 
   
-  INFO_URL = 'https://www.youtube.com/get_video_info?html5=1&c=WEB&cplayer=UNIPLAYER&cver=html5&video_id='
+  INFO_URL = 'https://www.youtube.com/get_video_info?html5=1&c=WEB&cplayer=UNIPLAYER&cver=html5&el=embedded&video_id='
   VIDEO_EURL = 'https://youtube.googleapis.com/v/'
   HEADER_SIZE = 438
   
@@ -48,6 +48,18 @@ class YouTube
     @emitter.on event,func
 
 
+  getMap: (map)->
+    streamMap = map.split(',')
+    streams = []
+    for map,i in streamMap
+      streamData = map.split('&')
+      for data in streamData 
+        [key,value]=data.split('=')
+        if !streams[i]? then streams[i]={}
+        streams[i][key]=unescape(value)
+    streams
+
+
   getVideoInfo:(url,next)->
     if url?
       @ytid = @getYTId url
@@ -58,11 +70,13 @@ class YouTube
       if err?
         console.log 'error',err
         return
-      info = unescape(body).split('&')
+      info = body.split('&')
+
       temp = {}
       for param in info
         [key,value] = param.split('=')
-        
+        value = unescape(value)
+
         if !Array.isArray(temp[key]) and temp[key]?
           old = temp[key]
           temp[key] =  []
@@ -72,38 +86,29 @@ class YouTube
           temp[key].push unescape(value)
         
         if not temp[key]?
-          temp[key] = unescape(value)
+          temp[key] = value
 
       if temp.status!='ok'
         console.log 'error',temp.reason
         return
 
-      console.log temp
+      @basicStreams = @getMap temp.url_encoded_fmt_stream_map
+      @adaptiveStreams = @getMap temp.adaptive_fmts
 
       @formats = {}
-      for itag,i in temp.itag
-        itagNum = /([0-9]+)/gi.exec(itag)
-        itag = itagNum[1]
-        if itag?
-          format = itag_formats[itag]
-          if format?.bitrate?
-            for url in temp.url
-              params = url.split('?')
-              if params?[1]?
-                url_params = params[1].split('&')
-                urlParams = {}
-                for param in url_params
-                  [key,value]=param.split('=')
-                  urlParams[key]=unescape(value)
-                if urlParams.itag? && urlParams.clen? && urlParams.dur?
+      for adaptive in @adaptiveStreams
+        itag = adaptive.itag
+        @formats[itag] = adaptive
+        @formats[itag].urlDecoded = unescape(adaptive.url)
+        urlDec = @formats[itag].urlDecoded
+        [url,paramStr] = /^https?\:\/\/[^?]+\?(.*)$/gi.exec(urlDec)
+        params = paramStr.split('&')
+        urlParams={}
+        for param in params
+          [key,value]=param.split('=')
+          urlParams[key]=unescape(value)
+        @formats[itag].urlParams = urlParams
 
-                  if urlParams.itag == itag
-                    @formats[itag] = {}
-                    @formats[itag] = itag_formats[itag]
-                    @formats[itag].url = url
-                    @formats[itag].dur = urlParams.dur
-                    @duration = urlParams.dur * 1000 #ms
-                    @formats[itag].clen = urlParams.clen
       console.log 'formats finished',@formats
       @emitter.emit 'formats',@formats
       @emitter.emit 'ready'
@@ -124,10 +129,9 @@ class YouTube
 
   timeToBytes:(ms)->
     format = @formats[@itag]
-    console.log 'itag',@itag,@formats
-    oneMs = format.clen / @duration
-    result = Math.round(oneMs * ms)
-    console.log 'ms/oneMs',ms,oneMs,result
+    oneMs = (format.clen-format.index) / @duration
+    result = Math.round(oneMs * ms) // 1024 * 1024
+    console.log 'ms,oneMs,result',ms,oneMs,result
     result
 
   getBytesRange:(range,next)->
@@ -183,13 +187,42 @@ class YouTube
       @getBytesRange rangeStr,next
 
 
-
-  getHeader:->
-    url = @formats[@itag].url+'&range='+range
-    console.log 'getting range',range
+  getIndexedFrames:(next)->
+    url = @formats[@itag].urlDecoded+'&range='+@formats[@itag].index
     host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
-    console.log 'host',host[1]
     reqObj = {url:url,headers:{'Host':host[1]},encoding:'binary'}
+    request reqObj,(err,res,body)=>
+      console.log res
+      if not Buffer.isBuffer(body)
+        buff = new Buffer(res.headers['content-length'],'binary')
+        buff.write body,'binary'
+      else
+        buff = body
+      frames = []
+      len = res.headers['content-length'] / 2
+      console.log 'len',len
+      for i in [0..len]
+        console.log i
+        frames.push buff.readUInt8(i)
+      console.log 'keyFrames',frames
+      @keyFrames = frames
+      next(frames)
+
+  getHeader:(next)->
+    @getIndexedFrames (indexedFrames)=>
+      url = @formats[@itag].urlDecoded+'&range='+@formats[@itag].init
+      console.log 'getting Header',url
+      host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
+      reqObj = {url:url,headers:{'Host':host[1]},encoding:'binary'}
+      request reqObj,(err,res,body)=>
+        console.log 'request for header finished',res.headers,body
+        if not Buffer.isBuffer(body)
+          buff = new Buffer(res.headers['content-length'],'binary')
+          buff.write body,'binary'
+        else
+          buff = body
+        @header = buff
+        next(buff)
 
 
   # range = 10s-20s or 1h10m0s-1h15m0s
@@ -231,8 +264,16 @@ class YouTube
     firstRange = @startByte.toString()+'-'+(parseInt(@startByte)+65535).toString()
     console.log 'firstRange',firstRange
     @fileStream = fs.createWriteStream(@filename);
-
-    @getBytesRange firstRange
+    
+    if @startByte!=0
+      @getHeader (buffer)=>
+        @fileStream.write buffer,'binary',(err)=>
+          if !err?
+            @getBytesRange firstRange
+          else
+            console.error err
+    else
+      @getBytesRange firstRange
 
 
 
