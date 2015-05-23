@@ -392,17 +392,28 @@ module.exports = EditorBackground =
     @decodeVideo()
 
   downloadYTVideo: (url)->
-    @yt = new yt(url)
-    @yt.getVideoInfo url,(formats)=>
-      console.log 'formats',formats
-      @yt.download 133
-    return
+    
+    
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
       ytid = @getYTId url
       @elements.ytid = ytid
       savePath = @elements.videoPath+ytid+videoExt
+
+      @yt = new yt(url)
+      @yt.on 'formats',(formats)=>
+        console.log 'formats',formats
+      @yt.on 'data',(data)=>
+        console.log 'data received',data.size
+      @yt.on 'done',=>
+        console.log 'download complete'
+      @yt.on 'ready',=>
+        @yt.download {filename:savePath,itag:134} 
+
+      @yt.getVideoInfo()
+      return 
+
       alreadyExists = false
 
       try
