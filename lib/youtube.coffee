@@ -78,8 +78,6 @@ class YouTube
         console.log 'error',temp.reason
         return
 
-      console.log temp
-
       @formats = {}
       for itag,i in temp.itag
         itagNum = /([0-9]+)/gi.exec(itag)
@@ -117,7 +115,7 @@ class YouTube
       startMs = @parseTime(start)
       endMs = @parseTime(end)
       if not stratS<endS
-        alert 'Range is invalid'
+        console.error 'Range is invalid'
         return
       [startMs,endMs]
 
@@ -151,7 +149,7 @@ class YouTube
         buff.write body,'binary'
         body = buff
       
-      result = {bytes:body,size:parseInt(res.headers['content-length']),len:Buffer.byteLength(body,'binary')}
+      result = {bytes:body,size:parseInt(res.headers['content-length'])}
       console.log 'received bytes',result.size,res.headers,result.len
       @emitter.emit 'data',result
       @saveBytes result,next
@@ -164,14 +162,14 @@ class YouTube
     if @currentChunk == Math.ceil( @chunks ) #finished -last chunk
       @fileStream.end result.bytes,'binary',(err)=>
         if err?
-          alert 'Cannot save the file'
+          console.error 'Cannot save the file'
           return
         @emitter.emit 'done'
         if next? then next()
     else #not finished yet
       @fileStream.write result.bytes,'binary',(err)=>
         if err?
-          alert 'Cannot save the file'
+          console.error 'Cannot save the file'
           return
       start = @savedBytes
       if @currentChunk >= Math.floor( @chunks )
@@ -209,16 +207,16 @@ class YouTube
     if obj.filename?
       @filename = obj.filename
     else
-      alert 'no filename specified'
+      console.error 'no filename specified'
       return
 
     if !obj.itag?
-      alert 'No format specified'
+      console.error 'No format specified'
       return
 
     @itag = obj.itag
     if !@formats[@itag]?
-      alert 'Wrong format specified'
+      console.error 'Wrong format specified'
       return
 
     @startByte = @timeToBytes(@start)
@@ -230,7 +228,7 @@ class YouTube
     console.log 'chunks',@chunks
     firstRange = @startByte.toString()+'-'+(parseInt(@startByte)+65535).toString()
     console.log 'firstRange',firstRange
-    @fileStream = fs.createWriteStream(@filename);
+    @fileStream = fs.createWriteStream(@filename)
 
     @getBytesRange firstRange
 
