@@ -17,6 +17,6 @@ yt.on 'data',(data)=>
 yt.on 'done',=>
   console.log 'download complete'
 yt.on 'ready',=>
-	yt.download {filename:savePath,itag:135} 
+	yt.download {filename:savePath,itag:134,start:'10s'} 
 
 yt.getVideoInfo()
