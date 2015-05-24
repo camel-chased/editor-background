@@ -129,13 +129,13 @@ class YouTube
 
   timeToBytes:(ms)->
     format = @formats[@itag]
-    oneMs = (format.clen-format.index) / @duration
+    oneMs = format.clen / (format.urlParams.dur * 1000)
     result = Math.round(oneMs * ms) // 1024 * 1024
     console.log 'ms,oneMs,result',ms,oneMs,result
     result
 
   getBytesRange:(range,next)->
-    url = @formats[@itag].url+'&range='+range
+    url = @formats[@itag].urlDecoded+'&range='+range
     console.log 'getting range',range
     host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
     console.log 'host',host[1]
@@ -156,7 +156,7 @@ class YouTube
         body = buff
       
       result = {bytes:body,size:parseInt(res.headers['content-length'])}
-      console.log 'received bytes',result.size,res.headers,result.len
+      console.log 'received bytes',result.size,res.headers['content-length']
       @emitter.emit 'data',result
       @saveBytes result,next
     
@@ -165,7 +165,7 @@ class YouTube
     @savedBytes+=result.size
     @currentChunk++
     console.log 'chunk:',@currentChunk,'allBytes:',@savedBytes
-    if @currentChunk == Math.ceil( @chunks ) #finished -last chunk
+    if @currentChunk >= Math.ceil( @chunks ) #finished -last chunk
       @fileStream.end result.bytes,'binary',(err)=>
         if err?
           console.error 'Cannot save the file'
@@ -192,19 +192,14 @@ class YouTube
     host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
     reqObj = {url:url,headers:{'Host':host[1]},encoding:'binary'}
     request reqObj,(err,res,body)=>
-      console.log res
-      if not Buffer.isBuffer(body)
-        buff = new Buffer(res.headers['content-length'],'binary')
-        buff.write body,'binary'
-      else
-        buff = body
-      frames = []
-      len = res.headers['content-length'] / 2
-      console.log 'len',len
+      console.log res.headers['content-length']
+      len = body.length
+      console.log typeof body,body.length,@formats[@itag].index
+      arr = new ArrayBuffer(len)
       for i in [0..len]
-        console.log i
-        frames.push buff.readUInt8(i)
-      console.log 'keyFrames',frames
+        arr[i]=body.charCodeAt(i)
+      frames = new Uint16Array(arr)
+      console.log frames
       @keyFrames = frames
       next(frames)
 
@@ -228,16 +223,6 @@ class YouTube
   # range = 10s-20s or 1h10m0s-1h15m0s
   download:(obj)->
     console.log 'download',obj
-
-    @start = 0
-    @end = @duration
-    @savedBytes = 0
-    @currentChunk = 0
-
-    if obj.start?
-      @start = @parseTime(obj.start)
-    if obj.end?
-      @end = @parseTime(obj.end)
       
     if obj.filename?
       @filename = obj.filename
@@ -253,6 +238,17 @@ class YouTube
     if !@formats[@itag]?
       console.error 'Wrong format specified'
       return
+
+
+    @start = 0
+    @end = @parseTime("10s")
+    @savedBytes = 0
+    @currentChunk = 0
+
+    if obj.start?
+      @start = @parseTime(obj.start)
+    if obj.end?
+      @end = @parseTime(obj.end)
 
     @startByte = @timeToBytes(@start)
     @endByte = @timeToBytes(@end)
