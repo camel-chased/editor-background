@@ -13,7 +13,7 @@ savePath = '../youtube-videos/'+ytid+'.mp4'
 yt.on 'formats',(formats)=>
   
 yt.on 'data',(data)=>
-  
+	console.log 'data',data
 yt.on 'done',=>
   console.log 'download complete'
 yt.on 'ready',=>

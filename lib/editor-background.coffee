@@ -373,14 +373,15 @@ module.exports = EditorBackground =
     "
     @elements.videoCanvas = videoCanvas
     @elements.main.insertBefore videoCanvas,@elements.textBackground
+    @decodeVideo()
 
+  createVideoElement:->
     video = document.createElement 'video'
     source = document.createElement 'source'
     @elements.video =  video
     @elements.source = source
     video.appendChild source
     source.type="video/"+@elements.videoFormat
-    source.src = savePath
     video.style.cssText="
     position:absolute;
     left:0;
@@ -389,7 +390,7 @@ module.exports = EditorBackground =
     height:100%;
     "
     @elements.main.insertBefore video,@elements.textBackground
-    @decodeVideo()
+
 
   downloadYTVideo: (url)->
     
@@ -406,8 +407,16 @@ module.exports = EditorBackground =
         console.log 'formats',formats
       @yt.on 'data',(data)=>
         console.log 'data received',data.size
-      @yt.on 'done',=>
+      @yt.on 'done',(chunks)=>
         console.log 'download complete'
+        @createVideoElement()
+        blobArr=[]
+        for chunk in chunks
+          blobArr.concat(chunk.data)
+        blob = new Blob(blobArr,{type:'video/mp4'})
+        url = URL.createObjectURL(blob)
+        @elements.source.src = url
+
       @yt.on 'ready',=>
         @yt.download {filename:savePath,itag:134,start:'10s',end:'20s'} 
 
