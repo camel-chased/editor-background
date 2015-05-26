@@ -186,7 +186,6 @@ class YouTube
     if obj.end?
       @end = @parseTime(obj.end)
 
-
   makeNewHeader:(next)->
     sidx = @newHeader.fetch('sidx')
     refCount = sidx.reference_count
@@ -249,7 +248,6 @@ class YouTube
         console.error err
         return
       next()
-    
 
   getHeader:(next)->
     initRange = @formats[@itag].init.split('-')
