@@ -186,6 +186,12 @@ class YouTube
     if obj.end?
       @end = @parseTime(obj.end)
 
+  int32toBuff8:(number)->
+    int32 = new Uint32Array(1)
+    int32[0]=number
+    buff8 = new Uint8Array(int32.buffer)
+    buff8
+
   makeNewHeader:(next)->
     sidx = @newHeader.fetch('sidx')
     refCount = sidx.reference_count
@@ -203,12 +209,6 @@ class YouTube
     sidx._raw.setUint32(0,newSidxSize) # sidx size changed
     sidx._raw.setUint16(30,@downloadIndexes.length) # reference_count
 
-    # tkhd and mvhd durations must be updated too
-
-    tkhd = @newHeader.fetch('tkhd')
-    mvhd = @newHeader.fetch('mvhd')
-
-    
 
     console.log 'sidx.size',sidx._raw.getUint32(0)
     console.log 'sidx.reference_count',sidx._raw.getUint16(30)
@@ -238,11 +238,30 @@ class YouTube
       console.log 'newReferences[i],i,referencesOffset+i',byte,i,i+referencesOffset,'"'+String.fromCharCode(byte)+'"'
       headerData[ i+referencesOffset ] = byte
 
+    # tkhd and mvhd durations must be updated too
+
+    tkhd = @newHeader.fetch('tkhd')
+    mvhd = @newHeader.fetch('mvhd')
+    mdhd = @newHeader.fetch('mdhd')
+    console.log tkhd,mvhd
+
+    newDuration = 0
+    for chunk in @chunksToDownload
+      newDuration += chunk.duration
+    console.log 'newDuration',newDuration
+
+    buff8 = @int32toBuff8(newDuration)
+    for i in [0..3]
+      headerData[ mvhd._offset+20+i ] = buff8[i]
+    for i in [0..3]
+      headerData[ tkhd._offset+24+i ] = buff8[i]
+      console.log 'buff8[i]',buff8[i]
+
     console.log 'headerData',headerData.buffer.byteLength
     checkNewHeader = mp4.parseBuffer( headerData.buffer )
     console.log 'checkNewHeader',checkNewHeader
     newHeaderStr = String.fromCharCode.apply(null,headerData)
-    console.log 'newHeaderStr',newHeaderStr
+    console.log 'newHeaderStr',newHeaderStr.length,newHeaderStr
     @fileStream.write newHeaderStr,'binary',(err)=>
       if err?
         console.error err
