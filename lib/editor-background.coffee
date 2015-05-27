@@ -304,7 +304,6 @@ module.exports = EditorBackground =
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
     ytid = @getYTId atom.config.get 'editor-background.youTubeURL'
-    gifPath = @elements.videoPath+ytid+'.gif'
     content=document.createElement 'div'
     @elements.modalContent=content
     content.innerHTML="
@@ -375,13 +374,14 @@ module.exports = EditorBackground =
     @elements.main.insertBefore videoCanvas,@elements.textBackground
     @decodeVideo()
 
-  createVideoElement:->
+  createVideoElement:(src)->
     video = document.createElement 'video'
     source = document.createElement 'source'
     @elements.video =  video
     @elements.source = source
     video.appendChild source
     source.type="video/"+@elements.videoFormat
+    source.src=src
     video.style.cssText="
     position:absolute;
     left:0;
@@ -401,21 +401,20 @@ module.exports = EditorBackground =
       ytid = @getYTId url
       @elements.ytid = ytid
       savePath = @elements.videoPath+ytid+videoExt
+      choosenFormat = 134
 
       @yt = new yt(url)
       @yt.on 'formats',(formats)=>
         console.log 'formats',formats
+        @videoWidth = formats[choosenFormat].width
+        @videoHeight = formats[choosenFormat].height
       @yt.on 'data',(data)=>
         console.log 'data received',data.size
       @yt.on 'done',(chunks)=>
         console.log 'download complete'
-        @createVideoElement()
-        blobArr=[]
-        for chunk in chunks
-          blobArr.concat(chunk.data)
-        blob = new Blob(blobArr,{type:'video/mp4'})
-        url = URL.createObjectURL(blob)
-        @elements.source.src = url
+        @elements.modalElement.innerHTML="Rendering frames..."
+        @createVideoElement(savePath)
+        @insertVideo.apply @,[savePath]
 
       @yt.on 'ready',=>
         @yt.download {filename:savePath,itag:134,start:'10s',end:'20s'} 

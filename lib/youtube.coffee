@@ -102,6 +102,11 @@ class YouTube
       for adaptive in @adaptiveStreams
         itag = adaptive.itag
         @formats[itag] = adaptive
+        if @formats[itag].size?
+          size = @formats[itag].size.split('x')
+          @formats[itag].width = size[0]
+          @formats[itag].height = size[1]
+
         @formats[itag].urlDecoded = unescape(adaptive.url)
         urlDec = @formats[itag].urlDecoded
         [url,paramStr] = /^https?\:\/\/[^?]+\?(.*)$/gi.exec(urlDec)
@@ -189,7 +194,10 @@ class YouTube
   int32toBuff8:(number)->
     int32 = new Uint32Array(1)
     int32[0]=number
-    buff8 = new Uint8Array(int32.buffer)
+    buff8temp = new Uint8Array(int32.buffer.slice(0,4))
+    buff8 = new Uint8Array(4)
+    for i in [0..3]
+      buff8[i]=buff8temp[3-i]
     buff8
 
   makeNewHeader:(next)->
@@ -239,24 +247,36 @@ class YouTube
       headerData[ i+referencesOffset ] = byte
 
     # tkhd and mvhd durations must be updated too
-
+    
     tkhd = @newHeader.fetch('tkhd')
+    # tkhd
+    # full box 12bytes size(4)|tkhd(4)|ver(1)|flags(3)
+    # size(4)|tkhd(4)|ver(1)|flags(3)|creation_time(4)|modification_time(4)|track_ID(4)|reserver(4)|duration(4) ...
     mvhd = @newHeader.fetch('mvhd')
+    # mvhd
+    # full box 12bytes size(4)|mvhd(4)|ver(1)|flags(3)
+    # size(4)|mvhd(4)|ver(1)|flags(3)|creation_time(4)|modification_time(4)|timescale(4)|duration(4) ...
     mdhd = @newHeader.fetch('mdhd')
-    console.log tkhd,mvhd
+    # mdhd
+    # full box 12bytes size(4)|mdhd(4)|ver(1)|flags(3)
+    # size(4)|mdhd(4)|ver(1)|flags(3)|creation_time(4)|modification_time(4)|timescale(4)|duration(4) ...
+    console.log 'tkhd,mvhd,mdhd',tkhd,mvhd,mdhd
 
     newDuration = 0
     for chunk in @chunksToDownload
       newDuration += chunk.duration
-    console.log 'newDuration',newDuration
+    console.log 'newDuration',newDuration,'real',newDuration/@timescale
 
     buff8 = @int32toBuff8(newDuration)
     for i in [0..3]
-      headerData[ mvhd._offset+20+i ] = buff8[i]
+      headerData[ mvhd._offset+24+i ] = buff8[i]
     for i in [0..3]
-      headerData[ tkhd._offset+24+i ] = buff8[i]
-      console.log 'buff8[i]',buff8[i]
+      headerData[ tkhd._offset+28+i ] = buff8[i]
+    for i in [0..3]
+      headerData[ mdhd._offset+24+i ] = buff8[i]
 
+      console.log 'buff8[i]',buff8[i]
+    
     console.log 'headerData',headerData.buffer.byteLength
     checkNewHeader = mp4.parseBuffer( headerData.buffer )
     console.log 'checkNewHeader',checkNewHeader
@@ -296,7 +316,7 @@ class YouTube
       @references = @sidx.references
 
       @chunks = []
-      offset = parseInt(initRange[1])+1 # end of header
+      offset = parseInt(indexRange[1])+1 # end of header
       time = 0
       for reference in @references
         startTime = time
@@ -318,7 +338,7 @@ class YouTube
       @findChunks @start,@end
 
       @makeNewHeader ()=>
-        next(@ranges)
+        next()
 
 
 
