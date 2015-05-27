@@ -186,10 +186,9 @@ class YouTube
     console.log 'calculatingChunks',obj
     @start = 0
     @end = @parseTime("10s")      
-    if obj.start?
-      @start = @parseTime(obj.start)
-    if obj.end?
-      @end = @parseTime(obj.end)
+    if obj.time?
+      @start = obj.time.start = @parseTime(obj.time.start)
+      @end = obj.time.end = @parseTime(obj.time.end)
 
   int32toBuff8:(number)->
     int32 = new Uint32Array(1)

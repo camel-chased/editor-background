@@ -63,15 +63,14 @@ module.exports = EditorBackground =
       order:2
       description:"animation speed in ms, LOWER VALUE = HIGHER CPU USAGE"
     startTime:
-      type:"integer"
-      default:0
+      type:"string"
+      default:'0s'
       order:3
-      description:"video start time in miliseconds ( 1s = 1000ms )"
+      description:"video start time like 1h30m10s"
     endTime:
-      type:"integer"
-      default:10000
-      maximum:20000
-      description:"video end time in miliseconds (max 30 000 = 30s)"
+      type:"string"
+      default:"20s"
+      description:"video end time like 1h30m30s"
       order:4
     textBackground:
       type:"color"
@@ -280,20 +279,20 @@ module.exports = EditorBackground =
   getFrame:(canvas,ctx,video,w,h)->
     @frame++
     tick=50
-    if @frame*tick >= atom.config.get('editor-background.endTime')
+    console.log 'getFrame time',@time
+    if @frame*tick >= @time.end - @time.start
       return @getImagesDone
     frame=@elements.modalContent.querySelector '#editor-background-frame'
     frame.innerText=@frame
     ctx.drawImage video,0,0
     video.pause()
-    if @frame*tick>=atom.config.get('editor-background.startTime')
+    if @playing
+      @frames.push canvas.toDataURL('image/jpeg')
+      video.play()
       if @playing
-        @frames.push canvas.toDataURL('image/jpeg')
-        video.play()
-        if @playing
-          setTimeout =>
-            @getFrame.apply @,[canvas,ctx,video,w,h]
-          ,tick
+        setTimeout =>
+          @getFrame.apply @,[canvas,ctx,video,w,h]
+        ,tick
 
 
   getImages: ->
@@ -403,25 +402,6 @@ module.exports = EditorBackground =
       savePath = @elements.videoPath+ytid+videoExt
       choosenFormat = 134
 
-      @yt = new yt(url)
-      @yt.on 'formats',(formats)=>
-        console.log 'formats',formats
-        @videoWidth = formats[choosenFormat].width
-        @videoHeight = formats[choosenFormat].height
-      @yt.on 'data',(data)=>
-        console.log 'data received',data.size
-      @yt.on 'done',(chunks)=>
-        console.log 'download complete'
-        @elements.modalElement.innerHTML="Rendering frames..."
-        @createVideoElement(savePath)
-        @insertVideo.apply @,[savePath]
-
-      @yt.on 'ready',=>
-        @yt.download {filename:savePath,itag:134,start:'10s',end:'20s'} 
-
-      @yt.getVideoInfo()
-      return 
-
       alreadyExists = false
 
       try
@@ -441,28 +421,28 @@ module.exports = EditorBackground =
         console.log e.stack
 
       if not alreadyExists
-        video = youtubedl url,['--format='+videoFormat+
-        '/[height <=? 720][filesize<=5M]'],{ cwd: __dirname }
-        size = 0
-        @elements.modal.show()
-        video.on 'info', (info)=>
-          console.log 'Download started'
-          console.log info
-          @videoWidth = info.width
-          @videoHeight = info.height
-          size = info.size
-        pos=0
-        video.on 'data', (data) =>
-          percent = Math.round(pos / size * 100)
-          @elements.modalElement.innerHTML="Downloading video... #{percent}%"
-          pos += data.length
-          console.log pos,size
-          if pos==size
-            console.log 'downloaded'
+        @yt = new yt(url)
+        @yt.on 'formats',(formats)=>
+          console.log 'formats',formats
+          @videoWidth = formats[choosenFormat].width
+          @videoHeight = formats[choosenFormat].height
+        @yt.on 'data',(data)=>
+          console.log 'data received',data.size
+        @yt.on 'done',(chunks)=>
+          console.log 'download complete'
+          @elements.modalElement.innerHTML="Rendering frames..."
+          @createVideoElement(savePath)
+          @insertVideo.apply @,[savePath]
 
-            @elements.modalElement.innerHTML="Rendering frames..."
-            @insertVideo.apply @,[savePath]
-        video.pipe fs.createWriteStream(savePath)
+        @yt.on 'ready',=>
+          conf = atom.config.get('editor-background')
+          @time = {
+            start:conf.startTime,
+            end:conf.endTime
+          }
+          @yt.download {filename:savePath,itag:134,time:@time} 
+
+        @yt.getVideoInfo()
       else
         @initAnimation(ytid)
     else
