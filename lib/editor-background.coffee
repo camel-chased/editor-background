@@ -589,8 +589,8 @@ module.exports = EditorBackground =
           charWidth = displayBuffer.getDefaultCharWidth()
           tabWidth = displayBuffer.getTabLength() * charWidth
 
-          workspace = document.querySelector 'atom-workspace'
-          computedStyle window.getComputedStyle(workspace)
+          workspace = qr 'atom-workspace'
+          computedStyle = window.getComputedStyle(workspace)
 
           fontFamily = computedStyle.fontFamily
           fontSize = computedStyle.fontSize
@@ -711,7 +711,10 @@ module.exports = EditorBackground =
 
   initialize: ->
     @elements.body = qr 'body'
-    @elements.workspace = atom.views.getView(atom.workspace)
+    # @elements.workspace = atom.views.getView(atom.workspace)
+    # doesn't work i dont know why
+    @elements.workspace = qr 'atom-workspace'
+    @elements.editor = null
     if @elements.workspace?
       activeEditor = atom.workspace.getActiveTextEditor()
       @elements.editor = atom.views.getView(activeEditor)
@@ -724,7 +727,7 @@ module.exports = EditorBackground =
 
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
-
+    console.log 'keys',keys,loaded
     if loaded.length == keys.length
 
       @insertMain()
@@ -889,10 +892,12 @@ module.exports = EditorBackground =
 
   applyBackground: ->
     if @packagesLoaded
-      workspaceView = atom.views.getView(atom.workspace)
+      # workspaceView = atom.views.getView(atom.workspace)
+      # doesn't work :/
+      workspaceView = qr 'atom-workspace'
       console.log 'workspaceView',workspaceView
       if workspaceView?
-        workspaceView.addClass 'editor-background'
+        workspaceView.className += ' editor-background'
       conf = atom.config.get 'editor-background'
       opacity = 100 - conf.opacity
       alpha=(opacity / 100).toFixed(2)
