@@ -1,7 +1,6 @@
 {CompositeDisposable} = require 'atom'
 fs = require 'fs'
 blur = require './StackBlur.js'
-youtubedl = require 'youtube-dl'
 animation = require './animation'
 yt = require './youtube'
 
@@ -442,7 +441,7 @@ module.exports = EditorBackground =
     html += '</select></div>
     <div style="text-align:center;"><button id="choose-format-btn">Download</button></div>
     </div>'
-    
+
     @showPopup html
 
     button = document.querySelector '#choose-format-btn'
@@ -503,7 +502,7 @@ module.exports = EditorBackground =
           @chooseFormat @yt.formats,(format)=>
             @videoWidth = @yt.formats[format].width
             @videoHeight = @yt.formats[format].height
-            @yt.download {filename:savePath,itag:format,time:@time} 
+            @yt.download {filename:savePath,itag:format,time:@time}
 
         @yt.getVideoInfo()
       else
@@ -589,17 +588,17 @@ module.exports = EditorBackground =
           lineHeight = attrs.lineHeight
           charWidth = displayBuffer.getDefaultCharWidth()
           tabWidth = displayBuffer.getTabLength() * charWidth
-          
+
           workspace = document.querySelector 'atom-workspace'
           computedStyle window.getComputedStyle(workspace)
-          
+
           fontFamily = computedStyle.fontFamily
           fontSize = computedStyle.fontSize
           if atom.config.settings.editor?
             editorSetting = atom.config.settings.editor
-            if editorSetting.fontFamily?!='' 
+            if editorSetting.fontFamily?!=''
               fontFamily = editorSetting.fontFamily
-            if editorSetting.fontSize?!='' 
+            if editorSetting.fontSize?!=''
               fontSize = editorSetting.fontSize
 
           css = @elements.textBackgroundCss
