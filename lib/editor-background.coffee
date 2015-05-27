@@ -712,8 +712,9 @@ module.exports = EditorBackground =
 
   initialize: ->
     @elements.body = qr 'body'
-    @elements.workspace = qr 'atom-workspace'
-    @elements.editor = atom.workspaceView.panes.find('atom-text-editor')[0]
+    @elements.workspace = atom.views.getView(atom.workspace)
+    activeEditor = workspace.getActiveTextEditor()
+    @elements.editor = atom.views.getView(activeEditor)
     @elements.treeView = qr '.tree-view'
     @elements.left = qr '.left'
     @elements.leftPanel = qr '.panel-left'
@@ -887,7 +888,7 @@ module.exports = EditorBackground =
         inline @elements.bg,"background-image: url('#{imageData}') !important"
 
   applyBackground: ->
-    atom.workspaceView.addClass 'editor-background'
+    atom.views.getView(atom.workspace).addClass 'editor-background'
     if @packagesLoaded
       conf = atom.config.get 'editor-background'
       opacity = 100 - conf.opacity
