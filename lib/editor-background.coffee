@@ -282,7 +282,7 @@ module.exports = EditorBackground =
     console.log 'getFrame time',@time
     if @frame*tick >= @time.end - @time.start
       return @getImagesDone
-    frame=@elements.modalContent.querySelector '#editor-background-frame'
+    frame=@elements.main.querySelector '#editor-background-frame'
     frame.innerText=@frame
     ctx.drawImage video,0,0
     video.pause()
@@ -303,17 +303,16 @@ module.exports = EditorBackground =
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
     ytid = @getYTId atom.config.get 'editor-background.youTubeURL'
-    content=document.createElement 'div'
-    @elements.modalContent=content
-    content.innerHTML="
+
+    html="
     <div id='editor-background-modal' style='overflow:hidden'>
     Getting Frame: <span id='editor-background-frame'>0</span><br>
-    Please be patient.<a href id='editor-background-done' style='float:right;'>
-    OK, that's it, let me see what you are doing so long...</a></div>"
-    doneBtn = content.querySelector '#editor-background-done'
+    Please be patient.<br><br>
+    <button id='editor-background-done'>
+    Cancel</button></div>"
+    @showPopup html
+    doneBtn = document.querySelector '#editor-background-done'
     doneBtn.addEventListener 'click',=>@getImagesDone()
-    @elements.modalElement.innerHTML=""
-    @elements.modalElement.appendChild content
     w = @videoWidth
     h = @videoHeight
     @getFrame canvas,context,video,w,h
@@ -339,7 +338,7 @@ module.exports = EditorBackground =
     @elements.video.remove()
     atom.config.set('editor-background.blurRadius',0)
     atom.config.set('editor-background.imageURL','')
-    @elements.modal.hide()
+    @hidePopup()
     @initAnimation ytid
 
 
@@ -390,20 +389,79 @@ module.exports = EditorBackground =
     "
     @elements.main.insertBefore video,@elements.textBackground
 
+  createPopup:->
+    html = '<div id="editor-background-popup-wrapper">
+    <div style="font-size: 1.2em;
+      text-align: center;
+      margin-bottom: 30px;
+      color: white;
+      margin: 0px -40px 33px;
+      background: black;
+      line-height: 32px;">editor-background</div>
+      <div id="editor-background-popup-content">
+      </div>
+      </div>'
+    @editorPopup = document.createElement 'div'
+    @editorPopup.id = 'editor-background-popup'
+    @editorPopup.innerHTML = html
+    @editorPopup.style.cssText='
+      display:none;
+      position:absolute;
+      width:300px;
+      height:200px;
+      left:calc(50% - 150px);
+      top: calc(50% - 100px);
+      box-sizing:border-box;
+      padding:0px 40px 40px;
+      background:white;
+      color:black;
+      z-index:999;
+      text-align:center;
+    '
+    @elements.main.appendChild @editorPopup
+
+  showPopup:(innerHTML)->
+    content = document.querySelector '#editor-background-popup-content'
+    content.innerHTML = innerHTML
+    @editorPopup.style.display='block'
+
+  hidePopup:->
+    @editorPopup.style.display='none'
+
+  chooseFormat:(formats,next)->
+    html = '
+    <div style="font-size:1.1em;text-align:center;margin-bottom:20px;">Choose video format</div>
+    <div style="text-align:center;margin-bottom:30px;">
+    <select id="background-format" name="format">'
+    console.log 'formatChooser'
+    formatKeys = Object.keys(formats)
+    for itag in formatKeys
+      format = formats[itag]
+      console.log 'format',format
+      html += "<option value=\"#{format.itag}\">Size: #{format.size}</option>"
+    html += '</select></div>
+    <div style="text-align:center;"><button id="choose-format-btn">Download</button></div>
+    </div>'
+    
+    @showPopup html
+
+    button = document.querySelector '#choose-format-btn'
+    button.addEventListener 'click',(ev)=>
+      bgf = document.querySelector '#background-format'
+      itag = bgf.value
+      @hidePopup()
+      next(itag)
+
 
   downloadYTVideo: (url)->
-    
-    
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
       ytid = @getYTId url
       @elements.ytid = ytid
       savePath = @elements.videoPath+ytid+videoExt
-      choosenFormat = 134
 
       alreadyExists = false
-
       try
         downloaded = fs.statSync(savePath)
         alreadyExists = downloaded.isFile()
@@ -424,10 +482,12 @@ module.exports = EditorBackground =
         @yt = new yt(url)
         @yt.on 'formats',(formats)=>
           console.log 'formats',formats
-          @videoWidth = formats[choosenFormat].width
-          @videoHeight = formats[choosenFormat].height
         @yt.on 'data',(data)=>
-          console.log 'data received',data.size
+          html='<div style="text-align:center;font-size:1.1em;">
+          Downloading: '+data.percent+' %
+          </div>'
+          @showPopup html
+
         @yt.on 'done',(chunks)=>
           console.log 'download complete'
           @elements.modalElement.innerHTML="Rendering frames..."
@@ -440,7 +500,10 @@ module.exports = EditorBackground =
             start:conf.startTime,
             end:conf.endTime
           }
-          @yt.download {filename:savePath,itag:134,time:@time} 
+          @chooseFormat @yt.formats,(format)=>
+            @videoWidth = @yt.formats[format].width
+            @videoHeight = @yt.formats[format].height
+            @yt.download {filename:savePath,itag:format,time:@time} 
 
         @yt.getVideoInfo()
       else
@@ -526,12 +589,19 @@ module.exports = EditorBackground =
           lineHeight = attrs.lineHeight
           charWidth = displayBuffer.getDefaultCharWidth()
           tabWidth = displayBuffer.getTabLength() * charWidth
-          editorSettings = atom.config.settings.editor
-          defaultSettings = atom.config.defaultSettings
-          fontFamily = editorSettings.fontFamily
-          fontSize = editorSettings.fontSize
-          if !fontFamily? then fontFamily = defaultSettings.fontFamily
-          if !fontSize? then fontSize = defaultSettings.fontSize
+          
+          workspace = document.querySelector 'atom-workspace'
+          computedStyle window.getComputedStyle(workspace)
+          
+          fontFamily = computedStyle.fontFamily
+          fontSize = computedStyle.fontSize
+          if atom.config.settings.editor?
+            editorSetting = atom.config.settings.editor
+            if editorSetting.fontFamily?!='' 
+              fontFamily = editorSetting.fontFamily
+            if editorSetting.fontSize?!='' 
+              fontSize = editorSetting.fontSize
+
           css = @elements.textBackgroundCss
 
           css.innerText="
@@ -657,6 +727,7 @@ module.exports = EditorBackground =
     if loaded.length == keys.length
 
       @insertMain()
+      @createPopup()
       @activateMouseMove()
 
       conf=atom.config.get('editor-background')

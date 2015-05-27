@@ -101,21 +101,22 @@ class YouTube
       @formats = {}
       for adaptive in @adaptiveStreams
         itag = adaptive.itag
-        @formats[itag] = adaptive
-        if @formats[itag].size?
-          size = @formats[itag].size.split('x')
-          @formats[itag].width = size[0]
-          @formats[itag].height = size[1]
+        if adaptive.type.substr(0,9)=='video/mp4'
+          @formats[itag] = adaptive
+          if @formats[itag].size?
+            size = @formats[itag].size.split('x')
+            @formats[itag].width = size[0]
+            @formats[itag].height = size[1]
 
-        @formats[itag].urlDecoded = unescape(adaptive.url)
-        urlDec = @formats[itag].urlDecoded
-        [url,paramStr] = /^https?\:\/\/[^?]+\?(.*)$/gi.exec(urlDec)
-        params = paramStr.split('&')
-        urlParams={}
-        for param in params
-          [key,value]=param.split('=')
-          urlParams[key]=unescape(value)
-        @formats[itag].urlParams = urlParams
+          @formats[itag].urlDecoded = unescape(adaptive.url)
+          urlDec = @formats[itag].urlDecoded
+          [url,paramStr] = /^https?\:\/\/[^?]+\?(.*)$/gi.exec(urlDec)
+          params = paramStr.split('&')
+          urlParams={}
+          for param in params
+            [key,value]=param.split('=')
+            urlParams[key]=unescape(value)
+          @formats[itag].urlParams = urlParams
 
       console.log 'formats finished',@formats
       @emitter.emit 'formats',@formats
@@ -164,7 +165,8 @@ class YouTube
         buff = new Uint8Array(body.length)
         for i in [0..body.length]
           buff[i]=body.charCodeAt(i)
-        @emitter.emit 'data',{current:index,all:@chunksToDownload.length,data:buff}
+        percent = (index / @chunksToDownload.length) * 100
+        @emitter.emit 'data',{current:index,all:@chunksToDownload.length,data:buff,percent:percent}
         @chunks[index].data=body
         @chunks[index].dataArray=buff.buffer
         @downloadedChunks.push @chunks[index]
