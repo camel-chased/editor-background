@@ -549,7 +549,7 @@ module.exports = EditorBackground =
   drawLine: (tokenizedLine,attrs) ->
     line = document.createElement 'div'
     line.className = 'editor-background-line'
-    text = tokenizedLine.buildText().trim()
+    text = tokenizedLine.text.trim()
     text = escapeHTML(text)
     text = text.replace(/[\s]{1}/gi,
       '<span class="editor-background-white"></span>')
@@ -589,24 +589,24 @@ module.exports = EditorBackground =
           charWidth = displayBuffer.getDefaultCharWidth()
           tabWidth = displayBuffer.getTabLength() * charWidth
 
-          workspace = qr 'atom-workspace'
+          workspace = qr 'atom-text-editor'
           computedStyle = window.getComputedStyle(workspace)
 
           fontFamily = computedStyle.fontFamily
           fontSize = computedStyle.fontSize
           if atom.config.settings.editor?
             editorSetting = atom.config.settings.editor
-            if editorSetting.fontFamily?!=''
+            if editorSetting.fontFamily?
               fontFamily = editorSetting.fontFamily
-            if editorSetting.fontSize?!=''
+            if editorSetting.fontSize?
               fontSize = editorSetting.fontSize
 
           css = @elements.textBackgroundCss
 
           css.innerText="
             .editor-background-line{
-              font-family:'#{fontFamily}';
-              font-size:#{fontSize}px;
+              font-family:#{fontFamily};
+              font-size:#{fontSize};
               height:#{lineHeight}px;
               display:block;
               color:transparent;
