@@ -98,6 +98,7 @@ class Animation
     height:'+@height+'px'
     @animation[0].style.cssText=css
     @animation[1].style.cssText=css
+    @animation[1].style.display='none'
     if @before?
       @element.insertBefore @animationWrapper,@before
     else
@@ -122,7 +123,7 @@ class Animation
     if @currentFrame+1>=@frames
       @currentFrame = 0
     top = -(@currentFrame*@height)
-    @animation.style.top=top+'px'
+    @animation[0].style.top=top+'px'
     @currentFrame++
 
   animate:->
