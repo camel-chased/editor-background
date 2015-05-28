@@ -87,7 +87,7 @@ class Animation
       @ctx.globalAlpha = alpha
       @ctx.drawImage @frames[index],0,0
     @currentFrame++
-      
+    
 
   animate:->
     if @playing
@@ -101,7 +101,7 @@ class Animation
     @canvas = document.createElement 'canvas'
     width = @frames[0].naturalWidth
     height = @frames[0].naturalHeight
-    console.log 'frames',@frames.length
+    #console.log 'frames',@frames.length
     @canvas.width = width
     @canvas.height = height
     width2 = width // 2
@@ -110,8 +110,6 @@ class Animation
     bdW_ = window.getComputedStyle(body).width
     bdW = /([0-9]+)/gi.exec(bdW_)[1]
     ratio = (bdW / width).toFixed(2)
-    #console.log 'ratio',ratio
-    #console.log 'width,height',width,height
     @canvas.className = 'editor-background-animation'
     @canvas.style.cssText = "
     position:absolute;
@@ -121,6 +119,8 @@ class Animation
     height:#{height}px;
     transform:scale(#{ratio}) translate3d(0,0,0);
     "
+    atom.config.observe 'editor-background.blurRadius',(radius)=>
+      @canvas.style.webkitFilter="blur(#{radius}px)"
     @ctx = @canvas.getContext '2d'
     if @before?
       @element.insertBefore @canvas,@before

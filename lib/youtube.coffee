@@ -19,7 +19,7 @@ class YouTube
   constructor:(url)->
     @ytid = @getYTId url
     @emitter = new Emitter
-    console.log 'youtube lib initialized',@ytid
+    #console.log 'youtube lib initialized',@ytid
 
   getYTId: (url) ->
     if url!=''
@@ -33,7 +33,7 @@ class YouTube
 
   
   parseTime: (time) ->
-    console.log 'parseTime',time
+   #console.log 'parseTime',time
     timeRegexp = /(?:(\d+)h)?(?:(\d+)m(?!s))?(?:(\d+)s)?(?:(\d+)(?:ms)?)?/
     result = timeRegexp.exec(time.toString())
     hours  = result[1] || 0
@@ -41,7 +41,7 @@ class YouTube
     secs   = result[3] || 0
     ms     = result[4] || 0
     res = hours * 3600000 + mins * 60000 + secs * 1000 + parseInt(ms, 10)
-    console.log 'res',res
+   #console.log 'res',res
     res
 
 
@@ -66,10 +66,10 @@ class YouTube
       @ytid = @getYTId url
     if @ytid ==  '' then return
     reqUrl = INFO_URL+@ytid
-    console.log 'reqUrl',reqUrl
+    #console.log 'reqUrl',reqUrl
     request reqUrl,(err,response,body)=>
       if err?
-        console.log 'error',err
+       #console.log 'error',err
         return
       info = body.split('&')
 
@@ -90,13 +90,13 @@ class YouTube
           temp[key] = value
 
       if temp.status!='ok'
-        console.log 'error',temp.reason
+       #console.log 'error',temp.reason
         return
 
       @basicStreams = @getMap temp.url_encoded_fmt_stream_map
       @adaptiveStreams = @getMap temp.adaptive_fmts
 
-      console.log temp
+      #console.log temp
 
       @formats = {}
       for adaptive in @adaptiveStreams
@@ -118,7 +118,7 @@ class YouTube
             urlParams[key]=unescape(value)
           @formats[itag].urlParams = urlParams
 
-      console.log 'formats finished',@formats
+      #console.log 'formats finished',@formats
       @emitter.emit 'formats',@formats
       @emitter.emit 'ready'
       if next?
@@ -141,14 +141,14 @@ class YouTube
     @downloadIndexes = []
     start = start / 1000 * @timescale
     end = end / 1000 * @timescale
-    console.log 'start,end',start,end
+    #console.log 'start,end',start,end
     for chunk,i in @chunks
-      console.log chunk.startTime,chunk.endTime
+     #console.log chunk.startTime,chunk.endTime
       if start < chunk.endTime && chunk.startTime < end
         chunks.push chunk
         @downloadIndexes.push i
     @chunksToDownload = chunks
-    console.log 'chunksToDownload',chunks
+    #console.log 'chunksToDownload',chunks
     if next? then next(chunks)
 
 
@@ -157,9 +157,9 @@ class YouTube
     if chunk?
       range = chunk.startByte+'-'+chunk.endByte
       url = @formats[@itag].urlDecoded+'&range='+range
-      console.log 'getting range',range
+     #console.log 'getting range',range
       host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
-      console.log 'host',host[1]
+     #console.log 'host',host[1]
       reqObj = {url:url,headers:{'Host':host[1]},encoding:'binary'}
       request reqObj,(err,res,body)=>
         buff = new Uint8Array(body.length)
@@ -185,7 +185,7 @@ class YouTube
     @getChunk(0)
 
   parseTimes:(obj)->
-    console.log 'calculatingChunks',obj
+    #console.log 'calculatingChunks',obj
     @start = 0
     @end = @parseTime("10s")      
     if obj.time?
@@ -204,47 +204,47 @@ class YouTube
   makeNewHeader:(next)->
     sidx = @newHeader.fetch('sidx')
     refCount = sidx.reference_count
-    console.log 'downloadIndexes',@downloadIndexes
+    #console.log 'downloadIndexes',@downloadIndexes
     # 12 is size of reference chunk
-    console.log 'sidx.size',sidx.size
+    #console.log 'sidx.size',sidx.size
     newRefsSize = @downloadIndexes.length*12
     delRefsSize = sidx.reference_count*12 - newRefsSize
-    console.log 'newRefsSize,delRefsSize',newRefsSize,delRefsSize
+    #console.log 'newRefsSize,delRefsSize',newRefsSize,delRefsSize
 
     newSidxSize = sidx.size - delRefsSize
     newHeaderSize = @newHeader._raw.byteLength - delRefsSize
-    console.log 'newSidxSize,newHeaderSize',newSidxSize,newHeaderSize
+    #console.log 'newSidxSize,newHeaderSize',newSidxSize,newHeaderSize
 
     sidx._raw.setUint32(0,newSidxSize) # sidx size changed
     sidx._raw.setUint16(30,@downloadIndexes.length) # reference_count
 
 
-    console.log 'sidx.size',sidx._raw.getUint32(0)
-    console.log 'sidx.reference_count',sidx._raw.getUint16(30)
+    #console.log 'sidx.size',sidx._raw.getUint32(0)
+    #console.log 'sidx.reference_count',sidx._raw.getUint16(30)
 
     newReferences = new Uint8Array( newRefsSize )
 
     y = 0
     for index in @downloadIndexes
-      console.log 'copying index',index
+     #console.log 'copying index',index
       for j in [index*12..index*12+11]
         byte =  sidx._raw.getUint8(j+32) # 32 is references data offset
-        console.log 'j,byte',j,byte
+       #console.log 'j,byte',j,byte
         newReferences[y] = byte
         y++
 
     headerData = new Uint8Array( newHeaderSize )
     
-    console.log 'copying all header data'
+   #console.log 'copying all header data'
     # full header clone
     for i in [0..(newHeaderSize-1)]
       headerData[i] = @newHeader._raw.getUint8(i)
 
     referencesOffset = sidx._offset+32 # 32 = sidx header without references
-    console.log 'copying references at offset',referencesOffset
+    #console.log 'copying references at offset',referencesOffset
     for i in [0..(newRefsSize-1)]
       byte = newReferences[ i ]
-      console.log 'newReferences[i],i,referencesOffset+i',byte,i,i+referencesOffset,'"'+String.fromCharCode(byte)+'"'
+     #console.log 'newReferences[i],i,referencesOffset+i',byte,i,i+referencesOffset,'"'+String.fromCharCode(byte)+'"'
       headerData[ i+referencesOffset ] = byte
 
     # tkhd and mvhd durations must be updated too
@@ -261,12 +261,12 @@ class YouTube
     # mdhd
     # full box 12bytes size(4)|mdhd(4)|ver(1)|flags(3)
     # size(4)|mdhd(4)|ver(1)|flags(3)|creation_time(4)|modification_time(4)|timescale(4)|duration(4) ...
-    console.log 'tkhd,mvhd,mdhd',tkhd,mvhd,mdhd
+   #console.log 'tkhd,mvhd,mdhd',tkhd,mvhd,mdhd
 
     newDuration = 0
     for chunk in @chunksToDownload
       newDuration += chunk.duration
-    console.log 'newDuration',newDuration,'real',newDuration/@timescale
+   #console.log 'newDuration',newDuration,'real',newDuration/@timescale
 
     buff8 = @int32toBuff8(newDuration)
     for i in [0..3]
@@ -276,13 +276,13 @@ class YouTube
     for i in [0..3]
       headerData[ mdhd._offset+24+i ] = buff8[i]
 
-      console.log 'buff8[i]',buff8[i]
+     #console.log 'buff8[i]',buff8[i]
     
-    console.log 'headerData',headerData.buffer.byteLength
+   #console.log 'headerData',headerData.buffer.byteLength
     checkNewHeader = mp4.parseBuffer( headerData.buffer )
-    console.log 'checkNewHeader',checkNewHeader
+   #console.log 'checkNewHeader',checkNewHeader
     newHeaderStr = String.fromCharCode.apply(null,headerData)
-    console.log 'newHeaderStr',newHeaderStr.length,newHeaderStr
+   #console.log 'newHeaderStr',newHeaderStr.length,newHeaderStr
     @fileStream.write newHeaderStr,'binary',(err)=>
       if err?
         console.error err
@@ -294,7 +294,7 @@ class YouTube
     indexRange = @formats[@itag].index.split('-')
     range = '0-'+indexRange[1]
     url = @formats[@itag].urlDecoded+'&range='+range
-    console.log 'init',url
+   #console.log 'init',url
     host =  /^https?\:\/\/([^\/]+)\/.*/gi.exec(url)
     reqObj = {url:url,headers:{'Host':host[1]},encoding:'binary'}
     request reqObj,(err,res,body)=>
@@ -309,11 +309,11 @@ class YouTube
 
       @newHeader = mp4.parseBuffer(buff.buffer)
 
-      console.log 'box',box
+     #console.log 'box',box
       @sidx = box.fetch('sidx')
       @mvhd = box.fetch('mvhd')
       @timescale = @mvhd.timescale
-      console.log 'timescale',@timescale
+     #console.log 'timescale',@timescale
       @references = @sidx.references
 
       @chunks = []
@@ -334,7 +334,7 @@ class YouTube
         @chunks.push chunk
         offset  += reference.referenced_size
         time += reference.subsegment_duration
-      console.log @chunks
+     #console.log @chunks
 
       @findChunks @start,@end
 

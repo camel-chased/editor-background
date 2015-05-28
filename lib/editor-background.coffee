@@ -54,8 +54,7 @@ module.exports = EditorBackground =
       type:'string'
       default:''
       order:1
-      description:"WARNING!!! NOT FINISHED YET - WORK IN PROGRESS,
-      but if you are really curious try to find 'background loop' in YT"
+      description:"Search for 'background loop' or similar on youtube and paste url here."
     animationSpeed:
       type:"integer"
       default:100
@@ -82,7 +81,7 @@ module.exports = EditorBackground =
       order:6
     textBackgroundBlurRadius:
       type:"integer"
-      default:20
+      default:5
       order:7
     backgroundSize:
       type:"string"
@@ -128,8 +127,8 @@ module.exports = EditorBackground =
       order:15
     textShadow:
       type:"string"
-      default:"0px 2px 2px rgba(0,0,0,0.3)"
-      description:"Add a little text shadow to code"
+      default:"none"
+      description:"Add a little text shadow to code like '0px 2px 2px rgba(0,0,0,0.3)' "
       order:16
     style:
       type:"string"
@@ -152,7 +151,7 @@ module.exports = EditorBackground =
     blurRadius:
       type:"integer"
       description:"Background image blur. 0 = none"
-      default:50
+      default:0
       minimim:0
       maximum: 200
 
@@ -442,6 +441,7 @@ module.exports = EditorBackground =
     html += '</select></div>
     <div style="text-align:center;"><button id="choose-format-btn">Download
     </button></div>
+    <br><br>
     </div>'
 
     @showPopup html
