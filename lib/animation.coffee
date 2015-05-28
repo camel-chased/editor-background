@@ -8,7 +8,7 @@ class Animation
   animPath:''
   frames:[]
   currentFrame:0
-  fadeOut:2
+  fadeOut:50
 
 
   constructor: (ytid) ->
@@ -73,14 +73,21 @@ class Animation
 
 
   drawFrame:->
-    if @currentFrame+1>=@frames.length
+    if @currentFrame+1>=(@frames.length - @fadeOut)
       @currentFrame = 0
-    if @currentFrame<=@fadeOut or @currentFrame+@fadeOut == @frames.length
-      @ctx.globalAlpha = 0.5
-    else
-      @ctx.globalAlpha = 1
-    frame = @frames[@currentFrame++]
+    if @currentFrame<@fadeOut
+      lastFrame = @frames.length - 1
+      diff = @fadeOut - @currentFrame
+      index = lastFrame - diff
+      alpha = parseFloat( (diff / @fadeOut).toFixed(2) )
+    frame = @frames[@currentFrame]
+    @ctx.globalAlpha = 1
     @ctx.drawImage frame,0,0
+    if @currentFrame<@fadeOut
+      @ctx.globalAlpha = alpha
+      @ctx.drawImage @frames[index],0,0
+    @currentFrame++
+      
 
   animate:->
     if @playing
@@ -94,6 +101,7 @@ class Animation
     @canvas = document.createElement 'canvas'
     width = @frames[0].naturalWidth
     height = @frames[0].naturalHeight
+    console.log 'frames',@frames.length
     @canvas.width = width
     @canvas.height = height
     width2 = width // 2
@@ -111,7 +119,7 @@ class Animation
     top:calc(50% - #{height2}px);
     width:#{width}px;
     height:#{height}px;
-    transform:scale(#{ratio});
+    transform:scale(#{ratio}) translate3d(0,0,0);
     "
     @ctx = @canvas.getContext '2d'
     if @before?
