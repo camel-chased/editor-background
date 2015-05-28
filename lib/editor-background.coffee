@@ -601,6 +601,9 @@ module.exports = EditorBackground =
             if editorSetting.fontSize?
               fontSize = editorSetting.fontSize
 
+          if !/[0-9]+px$/.test(fontSize)
+            fontSize+='px'
+
           css = @elements.textBackgroundCss
 
           css.innerText="
