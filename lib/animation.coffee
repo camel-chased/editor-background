@@ -1,4 +1,4 @@
-
+fs = require 'fs'
 
 class Animation
 
@@ -38,10 +38,12 @@ class Animation
       if ytidregres?.length>0
         ytid=ytidregres[1]
 
-  imageLoaded:(file,event)->
+  imageLoaded:(file,img,event)->
     @loaded++
     if @loaded == @frames.length
       @createCanvas()
+      @naturalWidth = img.naturalWidth
+      @naturalHeight = img.naturalHeight
       @playing = true
       @animate()
 
@@ -50,7 +52,7 @@ class Animation
   addFrame:(file)->
     img = new Image()
     img.addEventListener 'load',(event)=>
-      @imageLoaded.apply @,[file,event]
+      @imageLoaded.apply @,[file,img,event]
     img.src = @animPath+file
     @frames.push img
 
@@ -70,8 +72,7 @@ class Animation
       console.log e
 
 
-  drawFrame:(index)->
-    if index? then @currentFrame = index
+  drawFrame:->
     if @currentFrame+1>=@frames.length
       @currentFrame = 0
     if @currentFrame<=@fadeOut or @currentFrame+@fadeOut == @frames.length
@@ -91,15 +92,26 @@ class Animation
 
   createCanvas:->
     @canvas = document.createElement 'canvas'
-    @canvas.width = @frames[0].naturalWidth
-    @canvas.height = @frames[0].naturalHeight
+    width = @frames[0].naturalWidth
+    height = @frames[0].naturalHeight
+    @canvas.width = width
+    @canvas.height = height
+    width2 = width // 2
+    height2 = height // 2
+    body = document.querySelector 'body'
+    bdW_ = window.getComputedStyle(body).width
+    bdW = /([0-9]+)/gi.exec(bdW_)[1]
+    ratio = (bdW / width).toFixed(2)
+    #console.log 'ratio',ratio
+    #console.log 'width,height',width,height
     @canvas.className = 'editor-background-animation'
     @canvas.style.cssText = "
     position:absolute;
-    left:0;
-    top:0;
-    width:100%;
-    height:100%;
+    left:calc(50% - #{width2}px);
+    top:calc(50% - #{height2}px);
+    width:#{width}px;
+    height:#{height}px;
+    transform:scale(#{ratio});
     "
     @ctx = @canvas.getContext '2d'
     if @before?

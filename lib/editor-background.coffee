@@ -278,7 +278,7 @@ module.exports = EditorBackground =
   getFrame:(canvas,ctx,video,w,h)->
     @frame++
     tick=50
-    console.log 'getFrame time',@time
+    #console.log 'getFrame time',@time
     if @frame*tick >= @time.end - @time.start
       return @getImagesDone
     frame=@elements.main.querySelector '#editor-background-frame'
@@ -297,7 +297,7 @@ module.exports = EditorBackground =
   getImages: ->
     @playing=true
     @frame = 0
-    console.log 'getting images...'
+    #console.log 'getting images...'
     video = @elements.video
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
@@ -342,7 +342,7 @@ module.exports = EditorBackground =
 
 
   decodeVideo:->
-    console.log 'decoding video',@elements.video
+    #console.log 'decoding video',@elements.video
     @frames = []
     video = @elements.video
     video.addEventListener 'ended',=>
@@ -429,17 +429,19 @@ module.exports = EditorBackground =
 
   chooseFormat:(formats,next)->
     html = '
-    <div style="font-size:1.1em;text-align:center;margin-bottom:20px;">Choose video format</div>
+    <div style="font-size:1.1em;text-align:center;margin-bottom:20px;">
+    Choose video format</div>
     <div style="text-align:center;margin-bottom:30px;">
     <select id="background-format" name="format">'
-    console.log 'formatChooser'
+    #console.log 'formatChooser'
     formatKeys = Object.keys(formats)
     for itag in formatKeys
       format = formats[itag]
-      console.log 'format',format
+      #console.log 'format',format
       html += "<option value=\"#{format.itag}\">Size: #{format.size}</option>"
     html += '</select></div>
-    <div style="text-align:center;"><button id="choose-format-btn">Download</button></div>
+    <div style="text-align:center;"><button id="choose-format-btn">Download
+    </button></div>
     </div>'
 
     @showPopup html
@@ -480,7 +482,7 @@ module.exports = EditorBackground =
       if not alreadyExists
         @yt = new yt(url)
         @yt.on 'formats',(formats)=>
-          console.log 'formats',formats
+          #console.log 'formats',formats
         @yt.on 'data',(data)=>
           html='<div style="text-align:center;font-size:1.1em;">
           Downloading: '+data.percent+' %
@@ -488,7 +490,7 @@ module.exports = EditorBackground =
           @showPopup html
 
         @yt.on 'done',(chunks)=>
-          console.log 'download complete'
+          #console.log 'download complete'
           @elements.modalElement.innerHTML="Rendering frames..."
           @createVideoElement(savePath)
           @insertVideo.apply @,[savePath]
@@ -528,7 +530,7 @@ module.exports = EditorBackground =
 
 
   initAnimation:(ytid)->
-    console.log 'initializing Animation...'
+    #console.log 'initializing Animation...'
     @animation = new animation(ytid)
     @animation.start @elements.main,@elements.textBackground
 
@@ -730,7 +732,7 @@ module.exports = EditorBackground =
 
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
-    console.log 'keys',keys,loaded
+    #console.log 'keys',keys,loaded
     if loaded.length == keys.length
 
       @insertMain()
@@ -898,7 +900,7 @@ module.exports = EditorBackground =
       # workspaceView = atom.views.getView(atom.workspace)
       # doesn't work :/
       workspaceView = qr 'atom-workspace'
-      console.log 'workspaceView',workspaceView
+      #console.log 'workspaceView',workspaceView
       if workspaceView?
         workspaceView.className += ' editor-background'
       conf = atom.config.get 'editor-background'
