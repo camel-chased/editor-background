@@ -54,7 +54,8 @@ module.exports = EditorBackground =
       type:'string'
       default:''
       order:1
-      description:"Search for 'background loop' or similar on youtube and paste url here."
+      description:"Search for 'background loop' or similar on youtube and
+      paste url here."
     animationSpeed:
       type:"integer"
       default:100
