@@ -3,6 +3,7 @@ fs = require 'fs'
 blur = require './StackBlur.js'
 animation = require './animation'
 yt = require './youtube'
+popup = require './popup'
 
 
 qr = (selector) -> document.querySelector selector
@@ -176,6 +177,8 @@ module.exports = EditorBackground =
 
 
   activate: (state) ->
+    atom.commands.add 'atom-workspace',
+      'editor-background:toggle': => @toggle()
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
     atom.config.observe 'editor-background.imageURL',(url)=>
@@ -240,9 +243,6 @@ module.exports = EditorBackground =
     @elements.main=main
     document.querySelector '#editor-background-main'.remove
     @elements.body.insertBefore main,@elements.body.firstChild
-    @elements.modalElement = modal =document.createElement 'div'
-    modal.innerText='editor-background loading...'
-    @elements.modal = atom.workspace.addModalPanel  {item:modal,visible:false}
 
   insertTextBackgroundCss:->
     # CSS for background text
@@ -316,7 +316,8 @@ module.exports = EditorBackground =
     Please be patient.<br><br>
     <button id='editor-background-done'>
     Cancel</button></div>"
-    @showPopup html
+    title= 'Editor background - frames'
+    @popup.show title,html
     doneBtn = document.querySelector '#editor-background-done'
     doneBtn.addEventListener 'click',=>@getImagesDone()
     w = @videoWidth
@@ -344,7 +345,7 @@ module.exports = EditorBackground =
     @elements.video.remove()
     atom.config.set('editor-background.blurRadius',0)
     atom.config.set('editor-background.imageURL','')
-    @hidePopup()
+    @popup.hide()
     @initAnimation ytid
 
 
@@ -395,44 +396,7 @@ module.exports = EditorBackground =
     "
     @elements.main.insertBefore video,@elements.textBackground
 
-  createPopup:->
-    html = '<div id="editor-background-popup-wrapper">
-    <div style="font-size: 1.2em;
-      text-align: center;
-      margin-bottom: 30px;
-      color: white;
-      margin: 0px -40px 33px;
-      background: black;
-      line-height: 32px;">editor-background</div>
-      <div id="editor-background-popup-content">
-      </div>
-      </div>'
-    @editorPopup = document.createElement 'div'
-    @editorPopup.id = 'editor-background-popup'
-    @editorPopup.innerHTML = html
-    @editorPopup.style.cssText='
-      display:none;
-      position:absolute;
-      width:300px;
-      height:200px;
-      left:calc(50% - 150px);
-      top: calc(50% - 100px);
-      box-sizing:border-box;
-      padding:0px 40px 40px;
-      background:white;
-      color:black;
-      z-index:999;
-      text-align:center;
-    '
-    @elements.main.appendChild @editorPopup
 
-  showPopup:(innerHTML)->
-    content = document.querySelector '#editor-background-popup-content'
-    content.innerHTML = innerHTML
-    @editorPopup.style.display='block'
-
-  hidePopup:->
-    @editorPopup.style.display='none'
 
   chooseFormat:(formats,next)->
     html = '
@@ -458,7 +422,7 @@ module.exports = EditorBackground =
     button.addEventListener 'click',(ev)=>
       bgf = document.querySelector '#background-format'
       itag = bgf.value
-      @hidePopup()
+      @popup.hide()
       next(itag)
 
 
@@ -493,9 +457,10 @@ module.exports = EditorBackground =
           #console.log 'formats',formats
         @yt.on 'data',(data)=>
           html='<div style="text-align:center;font-size:1.1em;">
-          Downloading: '+data.percent+' %
+          Downloading: '+(data.percent).toFixed(2)+' %
           </div>'
-          @showPopup html
+          title = 'Editor Background - download'
+          @popup.show title,html
 
         @yt.on 'done',(chunks)=>
           #console.log 'download complete'
@@ -589,79 +554,82 @@ module.exports = EditorBackground =
 
           root = editor.shadowRoot
           scrollView = root.querySelector '.scroll-view'
-          offset = @getOffset scrollView
-          top = offset.top - attrs.offsetTop
-          left = offset.left
-          right = left + scrollView.width + textBlur
-          bottom = top + scrollView.height
-          activeEditor = attrs.activeEditor
-          displayBuffer = attrs.displayBuffer
-          lineHeight = attrs.lineHeight
-          charWidth = displayBuffer.getDefaultCharWidth()
-          tabWidth = displayBuffer.getTabLength() * charWidth
+          if scrollView?
+            offset = @getOffset scrollView
+            top = offset.top - attrs.offsetTop
+            left = offset.left
+            right = left + scrollView.width + textBlur
+            bottom = top + scrollView.height
+            activeEditor = attrs.activeEditor
+            displayBuffer = attrs.displayBuffer
+            lineHeight = attrs.lineHeight
+            charWidth = displayBuffer.getDefaultCharWidth()
+            tabWidth = displayBuffer.getTabLength() * charWidth
 
           workspace = qr 'atom-text-editor'
-          computedStyle = window.getComputedStyle(workspace)
+          
+          if workspace?
+            computedStyle = window.getComputedStyle(workspace)
 
-          fontFamily = computedStyle.fontFamily
-          fontSize = computedStyle.fontSize
-          if atom.config.settings.editor?
-            editorSetting = atom.config.settings.editor
-            if editorSetting.fontFamily?
-              fontFamily = editorSetting.fontFamily
-            if editorSetting.fontSize?
-              fontSize = editorSetting.fontSize
+            fontFamily = computedStyle.fontFamily
+            fontSize = computedStyle.fontSize
+            if atom.config.settings.editor?
+              editorSetting = atom.config.settings.editor
+              if editorSetting.fontFamily?
+                fontFamily = editorSetting.fontFamily
+              if editorSetting.fontSize?
+                fontSize = editorSetting.fontSize
 
-          if !/[0-9]+px$/.test(fontSize)
-            fontSize+='px'
+            if !/[0-9]+px$/.test(fontSize)
+              fontSize+='px'
 
-          scaleX = 1 + parseFloat((expand / 100).toFixed(2))
-          scaleY = 1 + parseFloat((expand / 10).toFixed(2))
+            scaleX = 1 + parseFloat((expand / 100).toFixed(2))
+            scaleY = 1 + parseFloat((expand / 10).toFixed(2))
 
-          css = @elements.textBackgroundCss
+            css = @elements.textBackgroundCss
 
-          css.innerText="
-            .editor-background-line{
-              font-family:#{fontFamily};
-              font-size:#{fontSize};
-              height:#{lineHeight}px;
-              display:block;
-              color:transparent;
-              background:#{color};
-              width:auto;
-              border-radius:10px;
-              transform:translate3d(0,0,0) scale(#{scaleX},#{scaleY});
-              float:left;
-              clear:both;
+            css.innerText="
+              .editor-background-line{
+                font-family:#{fontFamily};
+                font-size:#{fontSize};
+                height:#{lineHeight}px;
+                display:block;
+                color:transparent;
+                background:#{color};
+                width:auto;
+                border-radius:10px;
+                transform:translate3d(0,0,0) scale(#{scaleX},#{scaleY});
+                float:left;
+                clear:both;
+              }
+              .editor-background-white{
+                width:#{charWidth}px;
+                display:inline-block;
+              }
+              .editor-background-tab{
+                width:#{tabWidth}px;
+                display:inline-block;
+              }
+            "
+            @elements.textBackground.style.cssText="
+            top:#{top}px;
+            left:#{left}px;
+            right:#{right}px;
+            bottom:#{bottom}px;
+            position:absolute;
+            overflow:hidden;
+            z-index:0;
+            pointer-events:none;
+            opacity:#{opacity};
+            transform:translate3d(0,0,0);
+            -webkit-filter:blur(#{textBlur}px);
+            "
+            attrsForward = {
+              charWidth:charWidth
+              scrollLeft:attrs.scrollLeft
             }
-            .editor-background-white{
-              width:#{charWidth}px;
-              display:inline-block;
-            }
-            .editor-background-tab{
-              width:#{tabWidth}px;
-              display:inline-block;
-            }
-          "
-          @elements.textBackground.style.cssText="
-          top:#{top}px;
-          left:#{left}px;
-          right:#{right}px;
-          bottom:#{bottom}px;
-          position:absolute;
-          overflow:hidden;
-          z-index:0;
-          pointer-events:none;
-          opacity:#{opacity};
-          transform:translate3d(0,0,0);
-          -webkit-filter:blur(#{textBlur}px);
-          "
-          attrsForward = {
-            charWidth:charWidth
-            scrollLeft:attrs.scrollLeft
-          }
-          for line in attrs.screenLines
-            @drawLine line,attrsForward
+            for line in attrs.screenLines
+              @drawLine line,attrsForward
 
 
   activeEditor:{}
@@ -749,7 +717,12 @@ module.exports = EditorBackground =
     if loaded.length == keys.length
 
       @insertMain()
-      @createPopup()
+      @popup = new popup()
+      confPath = atom.packages.resolvePackagePath('editor-background')+
+      '/lib/config.html'
+      @configContent = fs.readFileSync confPath
+      @configTile = 'Editor Background - config'
+
       @activateMouseMove()
 
       conf=atom.config.get('editor-background')
@@ -970,3 +943,12 @@ module.exports = EditorBackground =
         inline @elements.left,'background:transparent !important;'
         inline @elements.resizer,'background:transparent !important;'
         inline @elements.leftPanel,'background:transparent !important;'
+
+
+  # show config window
+  toggle:->
+    console.log 'toggle',@popup
+    if not @popup.visible
+      @popup.show @configTile,@configContent
+    else
+      @popup.hide()

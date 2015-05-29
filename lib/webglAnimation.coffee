@@ -130,7 +130,7 @@ class WebGLAnimation
     positionLocation = gl.getAttribLocation(program, "a_position")
     buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    
+
     gl.enableVertexAttribArray(positionLocation)
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0)
 
