@@ -54,21 +54,23 @@ module.exports = EditorBackground =
       type:'string'
       default:''
       order:1
-      description:"Search for 'background loop' or similar on youtube and paste url here."
+      description:"Search for 'background loop',
+      'background animation' or similar on youtube and paste url here."
     animationSpeed:
       type:"integer"
       default:100
       order:2
-      description:"animation speed in ms, LOWER VALUE = HIGHER CPU USAGE"
+      description:"animation speed in ms (original is 50),
+      LOWER VALUE = HIGHER CPU USAGE"
     startTime:
       type:"string"
       default:'0s'
       order:3
-      description:"video start time like 1h30m10s"
+      description:"video start time like 1h30m10s or 10s"
     endTime:
       type:"string"
       default:"20s"
-      description:"video end time like 1h30m30s"
+      description:"video end time like 1h30m30s or 30s"
       order:4
     textBackground:
       type:"color"
@@ -83,58 +85,64 @@ module.exports = EditorBackground =
       type:"integer"
       default:5
       order:7
+    textBackgroundExpand:
+      type:"integer"
+      default:4
+      description:"If you want larger area under text - try 4 or 10"
+      order:8
     backgroundSize:
       type:"string"
       default:"original"
       enum:["original","100%","cover","manual"]
       description:"Background size"
-      order:8
+      order:9
     manualBackgroundSize:
       type:"string"
       default:""
       description:"'100px 100px' or '50%' try something..."
-      order:9
+      order:10
     customOverlayColor:
       type:"boolean"
       default:false
-      order:10
+      order:11
       description:"Do you want different color on top of background? check this"
     overlayColor:
       type:'color'
       default:'rgba(0,0,0,0)'
       description:"Color used to overlay background image"
-      order:11
+      order:12
     opacity:
       type:'integer'
       default:'100'
       description:"Background image visibility percent 1-100"
-      order:12
+      order:13
     treeViewOpacity:
       type:'integer'
       default:"35"
       description:"Tree View can be transparent too :)"
-      order:13
+      order:14
     transparentTabBar:
       type:"boolean"
       default:true
       desctiption:"Transparent background under file tabs"
-      order:14
+      order:15
     mouseFactor:
       type:"integer"
       default: 0
       description: "move background with mouse (higher value = slower)
       try 8 or 4 for 3dbox or 20 for wallpaper"
-      order:15
+      order:16
     textShadow:
       type:"string"
       default:"none"
-      description:"Add a little text shadow to code like '0px 2px 2px rgba(0,0,0,0.3)' "
-      order:16
+      description:"Add a little text shadow to code like
+      '0px 2px 2px rgba(0,0,0,0.3)' "
+      order:17
     style:
       type:"string"
       default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
       description:"Your custom css rules :]"
-      order:17
+      order:18
     boxDepth:
       type:"integer"
       default: 0
@@ -577,6 +585,7 @@ module.exports = EditorBackground =
           textBlur = conf.textBackgroundBlurRadius
           opacity = (conf.textBackgroundOpacity/100).toFixed(2)
           color = conf.textBackground.toRGBAString()
+          expand = conf.textBackgroundExpand
 
           root = editor.shadowRoot
           scrollView = root.querySelector '.scroll-view'
@@ -606,6 +615,9 @@ module.exports = EditorBackground =
           if !/[0-9]+px$/.test(fontSize)
             fontSize+='px'
 
+          scaleX = 1 + parseFloat((expand / 100).toFixed(2))
+          scaleY = 1 + parseFloat((expand / 10).toFixed(2))
+
           css = @elements.textBackgroundCss
 
           css.innerText="
@@ -617,7 +629,8 @@ module.exports = EditorBackground =
               color:transparent;
               background:#{color};
               width:auto;
-              transform:translate3d(0,0,0);
+              border-radius:10px;
+              transform:translate3d(0,0,0) scale(#{scaleX},#{scaleY});
               float:left;
               clear:both;
             }
@@ -879,7 +892,7 @@ module.exports = EditorBackground =
             applyBlur = true
           else
             setTimeout (=> @blurImage.apply @),1000
-      if applyBlur
+      if applyBlur and conf.imageUrl
         imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
         base64Data = imageData.replace(/^data:image\/png;base64,/, "")
         filename = atom.packages.resolvePackagePath('editor-background')+
