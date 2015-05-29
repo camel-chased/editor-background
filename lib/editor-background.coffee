@@ -129,7 +129,8 @@ module.exports = EditorBackground =
     textShadow:
       type:"string"
       default:"none"
-      description:"Add a little text shadow to code like '0px 2px 2px rgba(0,0,0,0.3)' "
+      description:"Add a little text shadow to code like
+      '0px 2px 2px rgba(0,0,0,0.3)' "
       order:16
     style:
       type:"string"
