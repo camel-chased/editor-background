@@ -4,7 +4,7 @@ blur = require './StackBlur.js'
 animation = require './animation'
 yt = require './youtube'
 popup = require './popup'
-
+configWindow = require './config'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -567,7 +567,7 @@ module.exports = EditorBackground =
             tabWidth = displayBuffer.getTabLength() * charWidth
 
           workspace = qr 'atom-text-editor'
-          
+
           if workspace?
             computedStyle = window.getComputedStyle(workspace)
 
@@ -718,10 +718,7 @@ module.exports = EditorBackground =
 
       @insertMain()
       @popup = new popup()
-      confPath = atom.packages.resolvePackagePath('editor-background')+
-      '/lib/config.html'
-      @configContent = fs.readFileSync confPath
-      @configTile = 'Editor Background - config'
+      @configWnd = new configWindow()
 
       @activateMouseMove()
 
@@ -945,10 +942,21 @@ module.exports = EditorBackground =
         inline @elements.leftPanel,'background:transparent !important;'
 
 
+
+
+
   # show config window
   toggle:->
-    console.log 'toggle',@popup
     if not @popup.visible
-      @popup.show @configTile,@configContent
+      attrs=
+      {
+        title:@configWnd.title,
+        content:@configWnd.content,
+        buttons:@configWnd.buttons,
+        onShow:(popup)=>
+          @configWnd.onShow(popup)
+      }
+      @popup.show attrs
+
     else
       @popup.hide()

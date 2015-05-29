@@ -44,6 +44,7 @@ body{
   }
   .title{
     background:@tab-background-color-active;
+    border-bottom:1px solid @base-border-color;
     padding:10px;
   }
   .close{
@@ -59,8 +60,39 @@ body{
     position:relative;
     bottom:0px;
     margin-top:13px;
-    padding-top:10px;
+    padding:10px;
     border-top:1px solid @base-border-color;
     text-align:right;
   }
+}
+
+
+#editor-background-config{
+
+  .tab-content{
+    display:none;
+    padding:10px;
+    &.active{
+      display:block;
+    }
+  }
+
+  .tab{
+    display:block;
+    float:left;
+    padding:4px 10px;
+    cursor:pointer;
+    border: 1px solid @tab-border-color;
+
+    &.active{
+      border-bottom:none;
+      font-weight:bold;
+    }
+  }
+
+  .config-tabs{
+    overflow:hidden;
+    border-collapse: collapse;
+  }
+
 }
