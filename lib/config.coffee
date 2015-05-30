@@ -1,6 +1,6 @@
 fs = require 'fs'
-Slider = require './slider'
-
+#Slider = require './slider'
+{$} = require 'atom'
 
 class ConfigWindow
 
@@ -33,17 +33,21 @@ class ConfigWindow
             <input type="text" id="imageURL" name="imageURL" style="width:500px;">
             <input type="file" id="imageURLFile" accept="image/*" style="display:none;">
             <button class="btn btn-default group-addon" id="imageURLFileBtn">...</button>
-            <input type="text" id="opacity" name="opacity">
+          </div>
+          <div class="group">
+            <label>Opacity</label>
+            <input type="text" class="range" data-slider-range="0,100" data-slider-step="1" id="opacity" name="opacity">
           </div>
         </div>
 
         <div class="tab-content">
           <div class="group">
             <label for="textBackground">Text background color</label>
-            <input type="color" name="textBackground" id="textBackground">
+            <input type="text" class="color-picker" name="textBackground" id="textBackground">
           </div>
           <div class="group">
-            <input type="text" id="textBackgroundOpacity" name="textBackgroundOpacity">
+            <label>Opacity</label>
+            <input type="text" class="range" data-slider-range="0,100" data-slider-step="1" id="textBackgroundOpacity" name="textBackgroundOpacity">
           </div>
         </div>
 
@@ -117,17 +121,6 @@ class ConfigWindow
     imageURLFile.addEventListener 'change',(ev)=>@imageURLFileChanged(ev,imageURLFile)
 
 
-  makeSliders:->
-    textOpacity = @popup.controls.textBackgroundOpacity
-    textOpacity.style.width = '160px'
-    args = {
-      label:'Opacity',
-      input:textOpacity,
-      min:0,
-      max:100
-    }
-    @txtBgOpacitySlider = new Slider(args)
-
   onShow:(popup)->
     @popup = popup
     @loadSettings()
@@ -135,7 +128,6 @@ class ConfigWindow
     @tabs = @configWnd.querySelectorAll '.tab'
     @tabsContent = @configWnd.querySelectorAll '.tab-content'
     @bindEvents()
-    @makeSliders()
 
     for index in [0..(@tabs.length-1)]
       do (index)=>

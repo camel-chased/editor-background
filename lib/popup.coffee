@@ -1,4 +1,7 @@
 fs = require 'fs'
+{$} = require 'atom'
+SimpleSlider = require './simpleSlider'
+colorpicker = require './colorpicker.js'
 
 class Popup
 
@@ -61,6 +64,20 @@ class Popup
           do (el)=>
             @controls[el.name]=el
 
+  makeSliders:->
+    ranges = @element.querySelectorAll '.range'
+    for range in ranges
+      do (range)=>
+        slider = new SimpleSlider($(range))
+        $(range).bind 'slider:changed',(ev,data)=>
+          range.value = data.ratio*100
+
+  makeColors:->
+    colorPickers = @element.querySelectorAll '.color-picker'
+    for picker in colorPickers
+      do (picker) =>
+        colorpicker( $(picker) )
+
   show:(attrs)->
     titleHTML = attrs.title
     contentHTML = attrs.content
@@ -93,6 +110,7 @@ class Popup
     @visible = true
     @center()
     @getControls()
+    @makeSliders()
     if attrs?.onShow?
       attrs.onShow(@)
 

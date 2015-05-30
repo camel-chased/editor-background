@@ -50,6 +50,7 @@ body{
     background:@tab-background-color-active;
     border-bottom:1px solid @base-border-color;
     padding:10px;
+    text-shadow:0px 1px 0px rgba(0,0,0,0.3);
   }
   .close{
     float: right;
@@ -78,6 +79,9 @@ body{
     border-radius:3px;
     margin:2px;
   }
+  input[type="text"]{
+    box-shadow:inset 2px 2px 2px rgba(0,0,0,0.1);
+  }
   input[type="color"]{
     height: 40px;
     vertical-align: middle;
@@ -87,6 +91,39 @@ body{
     border-left:none;
     margin-top:0;
     border-radius:0px 3px 3px 0px;
+  }
+  .slider {
+    width: 160px;
+    display:inline-block;
+    vertical-align: middle;
+  }
+  .slider > .dragger{
+    border: 1px solid @base-border-color;
+    width: 16px;
+    height: 16px;
+    border-radius:3px;
+    background: linear-gradient(
+      rgba(255,255,255,0.1),
+      rgba(255,255,255,0) 4px,
+      rgba(255,255,255,0) 10px,
+      rgba(0,0,0,0.33)
+      )
+    ,@tab-background-color-active;
+  }
+  .slider > .track{
+    box-shadow:inset 2px 2px 2px rgba(0,0,0,0.2);
+    height:10px;
+    border-radius:3px;
+    border:1px solid @base-border-color;
+    &:before{
+      content:"";
+      width: 100%;
+      height:100%;
+      position: absolute;
+      background:repeating-linear-gradient(to right,@app-background-color 0px,@app-background-color 1px, @base-border-color 2px,@base-border-color 3px);
+      background-size:2px;
+      opacity: 0.3;
+    }
   }
 }
 
@@ -106,7 +143,7 @@ body{
     background: @app-background-color;
     &.active{
       display:block;
-      border:1px solid @tab-border-color;
+      border:1px solid @base-border-color;
     }
   }
 
@@ -115,24 +152,34 @@ body{
     float:left;
     padding:4px 10px;
     cursor:pointer;
-    border: 1px solid @tab-border-color;
+    border: 1px solid @base-border-color;
     border-bottom:none;
     background:@tab-background-color;
 
     &.active{
       font-weight:bold;
       position:relative;
-      background:@tab-background-color-active;
+      background:linear-gradient(@tab-background-color-active,@app-background-color 50%);
 
       &:after{
         content:'';
         position:absolute;
         width:100%;
         height:2px;
-        background:@background-color-error;
+        background:@app-background-color;
         z-index:1;
         left:0;
         bottom:-2px;
+      }
+      &:before{
+        content:'';
+        position:absolute;
+        width:100%;
+        height:2px;
+        background:red;
+        z-index:1;
+        left:0;
+        top:-2px;
       }
     }
   }
