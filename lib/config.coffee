@@ -27,7 +27,8 @@ class ConfigWindow
         <div class="tab-content">
           <label for="imageURL">Image URL</label>
           <input type="text" id="imageURL" name="imageURL" style="width:600px">
-          <button class="btn btn-default file" id="imageURLFileBtn">...</button>
+          <input type="file" id="imageURLFile" accept="image/*" style="display:none;">
+          <button class="btn btn-default" id="imageURLFileBtn">...</button>
         </div>
 
         <div class="tab-content">
@@ -65,7 +66,8 @@ class ConfigWindow
     form = document.forms.ebSettings
     for elem in form.elements
       console.log 'elem.value',elem.value
-      elem.value = @settings[elem.name]
+      if elem.type!='file'
+        elem.value = @settings[elem.name]
 
 
   getSettings:->
@@ -83,7 +85,21 @@ class ConfigWindow
       atom.config.set('editor-background.'+key,settings[key])
 
   imageURLFileChooser:->
-    alert 'choose your file!'
+    fileSelect = @configWnd.querySelector '#imageURLFile'
+    console.log 'fileSelect',fileSelect
+    fileSelect.click()
+
+
+  imageURLFileChanged:(file)->
+    console.log 'file:',file
+
+  bindEvents:->
+    imageURLFileBtn = @configWnd.querySelector '#imageURLFileBtn'
+    imageURLFileBtn.addEventListener 'click',(ev)=>@imageURLFileChooser(ev)
+    imageURLFile = @configWnd.querySelector '#imageURLFile'
+    imageURLFile.addEventListener 'change',(file)=>@imageURLFileChanged(file)
+
+
 
   onShow:(popup)->
     @popup = popup
@@ -91,9 +107,7 @@ class ConfigWindow
     @configWnd = popup.element.querySelector '#editor-background-config'
     @tabs = @configWnd.querySelectorAll '.tab'
     @tabsContent = @configWnd.querySelectorAll '.tab-content'
-
-    imageURLFileBtn = @configWnd.querySelector '#imageURLFileBtn'
-    imageURLFileBtn.addEventListener 'click',(ev)=>@imageURLFileChooser(ev)
+    @bindEvents()
 
     for index in [0..(@tabs.length-1)]
       do (index)=>

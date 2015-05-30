@@ -288,7 +288,7 @@ module.exports = EditorBackground =
     #console.log 'getFrame time',@time
     if @frame*tick >= @time.end - @time.start
       return @getImagesDone
-    frame=@elements.main.querySelector '#editor-background-frame'
+    frame=document.querySelector '#editor-background-frame'
     frame.innerText=@frame
     ctx.drawImage video,0,0
     video.pause()
@@ -313,13 +313,17 @@ module.exports = EditorBackground =
     html="
     <div id='editor-background-modal' style='overflow:hidden'>
     Getting Frame: <span id='editor-background-frame'>0</span><br>
-    Please be patient.<br><br>
-    <button id='editor-background-done'>
-    Cancel</button></div>"
+    Please be patient.</div>"
     title= 'Editor background - frames'
-    @popup.show title,html
-    doneBtn = document.querySelector '#editor-background-done'
-    doneBtn.addEventListener 'click',=>@getImagesDone()
+    args = {
+      buttons:{
+        "Cancel":(ev)=>@getImagesDone()
+      },
+      title:title,
+      content:html
+    }
+    @popup.show args
+
     w = @videoWidth
     h = @videoHeight
     @getFrame canvas,context,video,w,h
@@ -411,19 +415,24 @@ module.exports = EditorBackground =
       #console.log 'format',format
       html += "<option value=\"#{format.itag}\">Size: #{format.size}</option>"
     html += '</select></div>
-    <div style="text-align:center;"><button id="choose-format-btn">Download
-    </button></div>
+    </div>
     <br><br>
     </div>'
 
-    @showPopup html
+    args = {
+      buttons:{
+        "OK":(ev,popup)=>
+          bgf = document.querySelector '#background-format'
+          itag = bgf.value
+          @popup.hide()
+          next(itag)
+      },
+      content:html,
+      title:"Editor Background - Video format"
+    }
 
-    button = document.querySelector '#choose-format-btn'
-    button.addEventListener 'click',(ev)=>
-      bgf = document.querySelector '#background-format'
-      itag = bgf.value
-      @popup.hide()
-      next(itag)
+    @popup.show args
+
 
 
   downloadYTVideo: (url)->
@@ -460,11 +469,14 @@ module.exports = EditorBackground =
           Downloading: '+(data.percent).toFixed(2)+' %
           </div>'
           title = 'Editor Background - download'
-          @popup.show title,html
+          args = {
+            title:"Editor Background - downloading...",
+            content:html
+          }
+          @popup.show args
 
         @yt.on 'done',(chunks)=>
-          #console.log 'download complete'
-          @elements.modalElement.innerHTML="Rendering frames..."
+          @popup.hide()
           @createVideoElement(savePath)
           @insertVideo.apply @,[savePath]
 

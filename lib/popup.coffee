@@ -3,7 +3,7 @@ fs = require 'fs'
 class Popup
 
   element = null
-  fadeTime = 250
+  fadeTime =250
   visible = false
   onHide = null
 
@@ -24,7 +24,9 @@ class Popup
     @element = document.createElement 'div'
     @element.className = 'eb-modal-window'
     @element.innerHTML = html
-    @element.style.transition = "opacity #{@fadeTime}ms"
+    fadeTime = @fadeTime
+    @element.style.transition = "opacity #{fadeTime}ms"
+    @element.style.webkitTransition = "opacity #{fadeTime}ms"
     close = @element.querySelector '.close'
     close.addEventListener 'click',(ev)=>
       @hide()
@@ -42,7 +44,6 @@ class Popup
     h_ = window.getComputedStyle(@element).height
     ww = /([0-9]+)/gi.exec(w_)
     hh = /([0-9]+)/gi.exec(h_)
-    console.log 'ww,hh',ww,hh
     w = ww[1]
     h = hh[1]
     w2 = w // 2
@@ -69,13 +70,11 @@ class Popup
     if attrs?.buttons?
       for name,action of attrs.buttons
         do (name,action)=>
-          console.log 'name,action',name,action
           btn = null
           btn = document.createElement 'button'
           btn.className = 'btn btn-default'
           btn.innerText = name
           btn.addEventListener 'click',(ev)=>
-            console.log 'popup.action',action
             action(ev,@)
           buttonsEl.appendChild btn
 
@@ -84,7 +83,6 @@ class Popup
     @visible = true
     @center()
     if attrs?.onShow?
-      console.log attrs.onShow
       attrs.onShow(@)
 
   hide:->

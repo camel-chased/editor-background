@@ -29,7 +29,7 @@ body{
 
 .eb-modal-window{
   position:absolute;
-  background: @app-background-color;
+  background: /*url('atom://editor-background/images/bg-noise.png'),*/@app-background-color;
   color: @text-color;
   border:1px solid @base-border-color;
   min-width: 300px;
@@ -40,7 +40,6 @@ body{
   z-index:999;
   text-align:center;
   border-radius:3px;
-  
   #working{
     float:left;
   }
@@ -60,6 +59,7 @@ body{
   }
   .content{
     padding:10px;
+    /*background: linear-gradient(rgba(0,0,0,0.1),rgba(0,0,0,0) 40px);*/
   }
   .buttons{
     position:relative;
@@ -68,6 +68,7 @@ body{
     padding:10px;
     border-top:1px solid @base-border-color;
     text-align:right;
+    background:@app-background-color;
   }
   input{
     background:@tab-background-color-active;
@@ -91,6 +92,7 @@ body{
   .tab-content{
     display:none;
     padding:10px;
+    background: @app-background-color;
     &.active{
       display:block;
       border:1px solid @tab-border-color;
@@ -104,9 +106,13 @@ body{
     cursor:pointer;
     border: 1px solid @tab-border-color;
     border-bottom:none;
+    background:@tab-background-color;
+
     &.active{
       font-weight:bold;
       position:relative;
+      background:@tab-background-color-active;
+
       &:after{
         content:'';
         position:absolute;
