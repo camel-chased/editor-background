@@ -663,32 +663,34 @@ module.exports = EditorBackground =
       else
         @removeBgLines()
       return
+    @activeEditor = atom.workspace.getActiveTextEditor()
     activeEditor = @activeEditor
-    displayBuffer = activeEditor.displayBuffer
-    if displayBuffer?
-      actualLines = displayBuffer.getVisibleRowRange()
-      screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
-      scrollTop = displayBuffer.getScrollTop()
-      scrollLeft = displayBuffer.getScrollLeft()
-      lineHeight = displayBuffer.getLineHeightInPixels()
-      offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
-      editorElement = atom.views.getView(activeEditor)
-      if editorElement?
-        if editorElement.constructor.name == 'atom-text-editor'
-          editorRect = editorElement.getBoundingClientRect()
-          attrs =
-            {
-              editorElement:editorElement
-              activeEditor:activeEditor
-              lineHeight:lineHeight
-              displayBuffer:displayBuffer
-              screenLines:screenLines.screenLines
-              offsetTop:offsetTop
-              scrollTop:scrollTop
-              scrollLeft:scrollLeft
-              visibleBuffer: actualLines
-            }
-          @drawLines attrs
+    if activeEditor?.displayBuffer?
+      displayBuffer = activeEditor.displayBuffer
+      if displayBuffer?
+        actualLines = displayBuffer.getVisibleRowRange()
+        screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
+        scrollTop = displayBuffer.getScrollTop()
+        scrollLeft = displayBuffer.getScrollLeft()
+        lineHeight = displayBuffer.getLineHeightInPixels()
+        offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
+        editorElement = atom.views.getView(activeEditor)
+        if editorElement?
+          if editorElement.constructor.name == 'atom-text-editor'
+            editorRect = editorElement.getBoundingClientRect()
+            attrs =
+              {
+                editorElement:editorElement
+                activeEditor:activeEditor
+                lineHeight:lineHeight
+                displayBuffer:displayBuffer
+                screenLines:screenLines.screenLines
+                offsetTop:offsetTop
+                scrollTop:scrollTop
+                scrollLeft:scrollLeft
+                visibleBuffer: actualLines
+              }
+            @drawLines attrs
 
   watchEditor:(editor)->
     editor.onDidChangeScrollTop (scroll)=>
@@ -730,7 +732,7 @@ module.exports = EditorBackground =
 
       @insertMain()
       @popup = new popup()
-      @configWnd = new configWindow()
+      @configWnd = new configWindow =>@drawBackground()
 
       @activateMouseMove()
 

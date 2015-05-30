@@ -1,4 +1,6 @@
 fs = require 'fs'
+Slider = require './slider'
+
 
 class ConfigWindow
 
@@ -8,13 +10,15 @@ class ConfigWindow
   settings = {}
   popup = null
 
-  constructor:->
+  constructor:(onApply)->
+    @onApply = onApply
     @title = "Editor Background - config - work in progress ;)"
     @content = '
     <div id="editor-background-config">
       <div class="config-tabs">
 
         <div class="tab config-tab">Image</div>
+        <div class="tab config-tab">Text</div>
         <div class="tab config-tab">Video</div>
         <div class="tab config-tab">3D Box</div>
         <div class="tab config-tab">About</div>
@@ -23,12 +27,24 @@ class ConfigWindow
 
       <div class="config-content">
 
-        <form name="ebSettings" id="ebSettings">
         <div class="tab-content">
-          <label for="imageURL">Image URL</label>
-          <input type="text" id="imageURL" name="imageURL" style="width:600px">
-          <input type="file" id="imageURLFile" accept="image/*" style="display:none;">
-          <button class="btn btn-default" id="imageURLFileBtn">...</button>
+          <div class="group">
+            <label for="imageURL">Image URL</label>
+            <input type="text" id="imageURL" name="imageURL" style="width:500px;">
+            <input type="file" id="imageURLFile" accept="image/*" style="display:none;">
+            <button class="btn btn-default group-addon" id="imageURLFileBtn">...</button>
+            <input type="text" id="opacity" name="opacity">
+          </div>
+        </div>
+
+        <div class="tab-content">
+          <div class="group">
+            <label for="textBackground">Text background color</label>
+            <input type="color" name="textBackground" id="textBackground">
+          </div>
+          <div class="group">
+            <input type="text" id="textBackgroundOpacity" name="textBackgroundOpacity">
+          </div>
         </div>
 
         <div class="tab-content">
@@ -42,7 +58,6 @@ class ConfigWindow
         <div class="tab-content">
           last
         </div>
-        </form>
 
       </div>
 
@@ -63,20 +78,21 @@ class ConfigWindow
       if !@settings[key] and confDefault[key]?
         @settings[key] = confDefault[key]
     console.log 'settings',@settings
-    form = document.forms.ebSettings
-    for elem in form.elements
-      console.log 'elem.value',elem.value
-      if elem.type!='file'
-        elem.value = @settings[elem.name]
+    for name,elem of @popup.controls
+      do (name,elem)=>
+        if elem.type!='file'
+          elem.value = @settings[elem.name]
 
 
   getSettings:->
-    form = document.forms.ebSettings
     values = {}
-    for elem in form.elements
-      do (elem)->
-        console.log 'elem',elem
-        values[elem.name]=elem.value
+    console.log 'popup controls',@popup.controls
+    for name,elem of @popup.controls
+      do (name,elem)->
+        console.log 'elem',name,elem
+        if name?
+          if name!=''
+            values[name]=elem.value
     values
 
   saveSettings:(settings)->
@@ -90,16 +106,27 @@ class ConfigWindow
     fileSelect.click()
 
 
-  imageURLFileChanged:(file)->
-    console.log 'file:',file
+  imageURLFileChanged:(ev,file)->
+    path = file.files[0].path
+    @popup.controls.imageURL.value = path
 
   bindEvents:->
     imageURLFileBtn = @configWnd.querySelector '#imageURLFileBtn'
     imageURLFileBtn.addEventListener 'click',(ev)=>@imageURLFileChooser(ev)
     imageURLFile = @configWnd.querySelector '#imageURLFile'
-    imageURLFile.addEventListener 'change',(file)=>@imageURLFileChanged(file)
+    imageURLFile.addEventListener 'change',(ev)=>@imageURLFileChanged(ev,imageURLFile)
 
 
+  makeSliders:->
+    textOpacity = @popup.controls.textBackgroundOpacity
+    textOpacity.style.width = '160px'
+    args = {
+      label:'Opacity',
+      input:textOpacity,
+      min:0,
+      max:100
+    }
+    @txtBgOpacitySlider = new Slider(args)
 
   onShow:(popup)->
     @popup = popup
@@ -108,6 +135,7 @@ class ConfigWindow
     @tabs = @configWnd.querySelectorAll '.tab'
     @tabsContent = @configWnd.querySelectorAll '.tab-content'
     @bindEvents()
+    @makeSliders()
 
     for index in [0..(@tabs.length-1)]
       do (index)=>
@@ -121,6 +149,8 @@ class ConfigWindow
     settings = @getSettings()
     console.log 'settings',settings
     @saveSettings settings
+    if @onApply?
+      @onApply()
 
 
   close:(ev,popup)->

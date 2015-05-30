@@ -6,6 +6,7 @@ class Popup
   fadeTime =250
   visible = false
   onHide = null
+  controls = {}
 
   constructor:(appendElement)->
     if not appendElement?
@@ -14,8 +15,8 @@ class Popup
     html = '<div class="wrapper">
     <div class="close">X</div>
     <div class="title"></div>
-      <div class="content">
-      </div>
+      <form name="contentForm" class="content">
+      </form>
       <span class="loading loading-spinner-tiny inline-block"
       id="working"
       style="display:none;"></span>
@@ -51,6 +52,15 @@ class Popup
     @element.style.left = "calc(50% - #{w2}px)"
     @element.style.top = "calc(50% - #{h2}px)"
 
+  getControls:->
+    @controls = {}
+    @controls.forms = document.forms
+    for form in document.forms
+      do (form)=>
+        for el in form.elements
+          do (el)=>
+            @controls[el.name]=el
+
   show:(attrs)->
     titleHTML = attrs.title
     contentHTML = attrs.content
@@ -82,6 +92,7 @@ class Popup
     @element.style.opacity = 1
     @visible = true
     @center()
+    @getControls()
     if attrs?.onShow?
       attrs.onShow(@)
 
