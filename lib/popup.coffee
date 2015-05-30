@@ -16,6 +16,9 @@ class Popup
     <div class="title"></div>
       <div class="content">
       </div>
+      <span class="loading loading-spinner-tiny inline-block"
+      id="working"
+      style="display:none;"></span>
       <div class="buttons"></div>
     </div>'
     @element = document.createElement 'div'
@@ -92,5 +95,13 @@ class Popup
       if @onHide?
         @onHide(@)
     , @fadeTime
+
+
+  working:(value)->
+    icon = @element.querySelector '#working'
+    if value
+      icon.style.display='block'
+    else
+      icon.style.display='none'
 
 module.exports = Popup
