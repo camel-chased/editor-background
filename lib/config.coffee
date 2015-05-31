@@ -1,6 +1,5 @@
 fs = require 'fs'
-#Slider = require './slider'
-{$} = require 'atom'
+{$} = require 'atom-space-pen-views'
 
 class ConfigWindow
 
@@ -36,7 +35,7 @@ class ConfigWindow
           </div>
           <div class="group">
             <label>Opacity</label>
-            <input type="text" class="range" data-slider-range="0,100" data-slider-step="1" id="opacity" name="opacity">
+            <input type="number" class="range" data-slider-range="0,100" id="opacity" name="opacity">
           </div>
         </div>
 
@@ -47,7 +46,7 @@ class ConfigWindow
           </div>
           <div class="group">
             <label>Opacity</label>
-            <input type="text" class="range" data-slider-range="0,100" data-slider-step="1" id="textBackgroundOpacity" name="textBackgroundOpacity">
+            <input type="number" class="range" data-slider-range="0,100" id="textBackgroundOpacity" name="textBackgroundOpacity">
           </div>
         </div>
 
@@ -72,6 +71,18 @@ class ConfigWindow
       "Close":(ev,popup)=> @close(ev,popup)
     }
 
+  type:(object)->
+    funcNameRegex = /function (.{1,})\(/
+    if object?.constructor?
+      res = (funcNameRegex).exec(object.constructor.toString())
+      if res?[1]?
+        res[1]
+      else
+        null
+    else
+      null
+
+
   loadSettings:->
     @settings = {}
     conf = atom.config.get('editor-background')
@@ -82,10 +93,17 @@ class ConfigWindow
       if !@settings[key] and confDefault[key]?
         @settings[key] = confDefault[key]
     console.log 'settings',@settings
+    console.log 'popup controls',@popup.controls
     for name,elem of @popup.controls
       do (name,elem)=>
         if elem.type!='file'
-          elem.value = @settings[elem.name]
+          val = @settings[elem.name]
+          type = @type val
+          if type?
+            if type == 'Color'
+              val = val.toHexString()
+          elem.value = val
+          $(elem).trigger('change')
 
 
   getSettings:->

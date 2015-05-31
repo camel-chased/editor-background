@@ -1,6 +1,19 @@
-{$} = require 'atom'
+###
+ jQuery Simple Slider
 
-class SimpleSlider
+ Copyright (c) 2012 James Smith (http://loopj.com)
+
+ Licensed under the MIT license (http://mit-license.org/)
+###
+$ = require('atom-space-pen-views').$
+
+(($, window) ->
+
+  #
+  # Main slider class
+  #
+
+  class SimpleSlider
     # Build a slider object.
     # Exposed via el.numericalSlider(options)
     constructor: (@input, options) ->
@@ -304,4 +317,46 @@ class SimpleSlider
         .trigger($.Event("change", eventData))
         .trigger("slider:changed", eventData)
 
-module.exports = SimpleSlider
+
+  #
+  # Expose as jQuery Plugin
+  #
+
+  $.extend $.fn, simpleSlider: (settingsOrMethod, params...) ->
+    publicMethods = ["setRatio", "setValue"]
+    $(this).each ->
+      if settingsOrMethod and settingsOrMethod in publicMethods
+        obj = $(this).data("slider-object")
+
+        obj[settingsOrMethod].apply(obj, params)
+      else
+        settings = settingsOrMethod
+        $(this).data "slider-object", new SimpleSlider($(this), settings)
+
+
+  #
+  # Attach unobtrusive JS hooks
+  #
+
+
+    $("[data-slider]").each ->
+      $el = $(this)
+
+      # Build options object from data attributes
+      settings = {}
+
+      allowedValues = $el.data "slider-values"
+      settings.allowedValues = (parseFloat(x) for x in allowedValues.split(",")) if allowedValues
+      settings.range = $el.data("slider-range").split(",") if $el.data("slider-range")
+      console.log 'range',settings.range
+      settings.step = $el.data("slider-step") if $el.data("slider-step")
+      settings.snap = $el.data("slider-snap")
+      settings.equalSteps = $el.data("slider-equal-steps")
+      settings.theme = $el.data("slider-theme") if $el.data("slider-theme")
+      settings.highlight = $el.data("slider-highlight") if $el.attr("data-slider-highlight")
+      settings.animate = $el.data("slider-animate") if $el.data("slider-animate")?
+
+      # Activate the plugin
+      $el.simpleSlider settings
+
+) $,window

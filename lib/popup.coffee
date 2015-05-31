@@ -1,5 +1,5 @@
 fs = require 'fs'
-{$} = require 'atom'
+{$} = require 'atom-space-pen-views'
 SimpleSlider = require './simpleSlider'
 colorpicker = require './colorpicker.js'
 
@@ -67,16 +67,28 @@ class Popup
   makeSliders:->
     ranges = @element.querySelectorAll '.range'
     for range in ranges
-      do (range)=>
-        slider = new SimpleSlider($(range))
-        $(range).bind 'slider:changed',(ev,data)=>
-          range.value = data.ratio*100
+      do (range)->
+        $(range).bind 'change',(ev)->
+          val = range.value
+          $(range).simpleSlider('setValue',val)
+
+        val = range.value || 0
+        dataRange = range.dataset.sliderRange.split(',')
+        $(range).simpleSlider({range:dataRange,value:val})
+        $(range).bind 'slider:changed',(ev,data)->
+          console.log 'sliderChange',data
+
 
   makeColors:->
     colorPickers = @element.querySelectorAll '.color-picker'
     for picker in colorPickers
-      do (picker) =>
-        colorpicker( $(picker) )
+      do (picker) ->
+        $(picker).wrap('<div class="picker-wrapper"></div>')
+        wrapper = $(picker).parent()
+        console.log 'wrapper',wrapper
+        cpicker = new colorpicker(picker,{container:wrapper,format:'hex'})
+        $(cpicker).focus ->
+          $(cpicker).colorpicker('show')
 
   show:(attrs)->
     titleHTML = attrs.title
@@ -111,6 +123,7 @@ class Popup
     @center()
     @getControls()
     @makeSliders()
+    @makeColors()
     if attrs?.onShow?
       attrs.onShow(@)
 
