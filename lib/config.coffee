@@ -20,60 +20,7 @@ class ConfigWindow
     @html = ''
     @cleanPackageName = @cleanName(@packageName)
     @title = @cleanName+" settings"
-    @content = '
-    <div id="editor-background-config">
-      <div class="config-tabs">
-
-        <div class="tab config-tab">Image</div>
-        <div class="tab config-tab">Text</div>
-        <div class="tab config-tab">Video</div>
-        <div class="tab config-tab">3D Box</div>
-        <div class="tab config-tab">About</div>
-
-      </div>
-
-      <div class="config-content">
-
-        <div class="tab-content">
-          <div class="group">
-            <label for="imageURL">Image URL</label>
-            <input type="text" id="imageURL" name="imageURL" style="width:500px;">
-            <input type="file" id="imageURLFile" accept="image/*" style="display:none;">
-            <button class="btn btn-default group-addon" id="imageURLFileBtn">...</button>
-          </div>
-          <div class="group">
-            <label>Opacity</label>
-            <input type="number" class="range" data-slider-range="0,100" id="opacity" name="opacity">
-          </div>
-        </div>
-
-        <div class="tab-content">
-          <div class="group">
-            <label for="textBackground">Text background color</label>
-            <input type="text" class="color-picker" name="textBackground" id="textBackground">
-          </div>
-          <div class="group">
-            <label>Opacity</label>
-            <input type="number" class="range" data-slider-range="0,100" id="textBackgroundOpacity" name="textBackgroundOpacity">
-          </div>
-        </div>
-
-        <div class="tab-content">
-          second
-        </div>
-
-        <div class="tab-content">
-          third
-        </div>
-
-        <div class="tab-content">
-          last
-        </div>
-
-      </div>
-
-    </div>
-    '
+    
     @buttons = {
       "Apply":(ev,popup)=> @applyConfig(ev,popup),
       "Close":(ev,popup)=> @close(ev,popup)
@@ -94,17 +41,28 @@ class ConfigWindow
   cleanName:(name)->
     name
 
-  getConfigValue:(fullPath)->
-    atom.config.get @packageName+'.'+fullPath
+  getConfigValue:(name,obj)->
+    fullPath = @packageName+@path+'.'+name
+    value = atom.config.get fullPath
+    if not value?
+      if obj?.default?
+        value = obj.default
+      else
+        value = atom.config.getDefault fullPath
+    value
 
-
-  parseStringChild:(name,obj)->
+  getChildCleanName:(name,obj)->
+    cleanName = @cleanName name
     if obj.title?
       cleanName = obj.title
-    else
-      cleanName = @cleanName(name)
-    fullPath = @path+'.'+name
-    value = getConfigValue fullPath
+    cleanName
+
+  parseStringChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    console.log 'value',value
+    if not value?
+      value = ''
     str =
       "<div class='group'>
         <label for='#{name}'>#{cleanName}</label>
@@ -112,67 +70,162 @@ class ConfigWindow
       </div>"
     str
 
-  parseIntegerChild:(obj)->
+  parseSliderChild:(name,obj,step)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    min = obj.minimum
+    max = obj.maximum
+    "
+    <div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
+      <input type='number' class='range' 
+        data-slider-range='#{min},#{max}' 
+        data-slider-step='#{step}'
+        name='#{name}' id='#{name}' value='#{value}'>
+    </div>
+    "
 
-  parseNumberChild:(obj)->
+  parseIntegerChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    if obj.minimum? and obj.maximum?
+      step = 1
+      if obj.step? then step = obj.step
+      @parseSliderChild name,obj,step
+    else
+      "
+      <div class='group'>
+        <label for='#{name}'>#{cleanName}</label>
+        <input type='number' name='#{name}' id='#{name}' value='#{value}'>
+      </div>
+      "
 
-  parseBooleanChild:(obj)->
+  parseNumberChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    if obj.minimum? and obj.maximum?
+      step = 1
+      if obj.step? then step = obj.step
+      @parseIntegerSlider name,obj,step
+    else
+      "
+      <div class='group'>
+        <label for='#{name}'>#{cleanName}</label>
+        <input type='text' name='#{name}' id='#{name}' value='#{value}'>
+      </div>
+      "
 
-  parseObjectChild:(obj)->
+  parseBooleanChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    checked = ''
+    if value then checked = " checked='checked' "
+    "
+    <div class='group'>
+      <label><input type='checkbox' name='#{name}' id='#{name}' #{checked}>#{cleanName}</label>
+    </div>
+    "
+  parseArrayChild:(name,obj)->
+    ''
 
-  parseArrayChild:(obj)->
+  parseEnumOptions:(options,selected)->
+    result = ''
+    for option in options
+      do (option)->
+        sel = ''
+        if selected == option then sel ='selected="selected"'
+        result+="
+        <option value='#{option}' #{sel}>#{option}</option>
+        "
+    result
 
-  parseEnumChild:(obj)->
+  parseEnumChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    options = @parseEnumOptions  obj.enum,value
+    "
+    <div class='group'>
+      <select name='#{name}' id='#{name}'>
+        #{options}
+      </select>
+    </div>
+    "
 
-  parseColorChild:(obj)->
+  parseColorChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    #value = value.toHexString()
+    "
+    <div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
+      <input type='text' class='color-picker' name='#{name}' id='#{name}' value='#{value}'>
+    </div>
+    "
 
   parseTabChild:(name,value,level)->
-
     parsers = {
-      'string':@parseStringChild,
-      'integer':@parseIntegerChild,
-      'number':@parseNumberChild,
-      'boolean':@parseBooleanChild,
-      'object':@parseObjectChild,
-      'array':@parseArrayChild,
-      'enum':@parseEnumChild,
-      'color':@parseColorChild
+      'string':(name,value)=>@parseStringChild name,value,
+      'integer':(name,value)=>@parseIntegerChild name,value,
+      'number':(name,value)=>@parseNumberChild name,value,
+      'boolean':(name,value)=>@parseBooleanChild name,value,
+      'object':(name,value)=>@parseObjectChild name,value,
+      'array':(name,value)=>@parseArrayChild name,value,
+      'color':(name,value)=>@parseColorChild  name,value
     }
+    if not value.enum?
+      parsers[value.type] name,value
+    else
+      @parseEnumChild name,value
 
-    parsers[value.type] name,value
+  makeTabs:(name,obj,level)->
+    cleanName = @getChildCleanName name,obj
+    props = obj.properties
+    tabs = Object.keys(props)
+    console.log 'tabs',tabs
+    html = "<div class='config-tabs'>"
+    index = 0
+    for tab in tabs
+      do (tab)->
+        html += "<div class='tab' id='tab-index-#{index}'>#{tab}</div>"
+    html += "</div>" # header tabs
 
-  parseTabChilds:(tab,childs,level)->
+    html+="<div class='config-content'>"
+    for key,value of props
+      do (key,value) =>
+        html += "<div class='tab-content' id='content-tab-index-#{index}'>"
+        html += @parseTabChild key,value,level+1
+        html += "</div>"
+    html += "</div>"
+    html
+
+  parseObjectChild:(name,obj,level)->
+    console.log 'name,obj',name,obj
+    if level > 10
+      throw new Error('something goes terribly wrong... I\'m going out of here')
+      return
     html = ''
-    @path = @path + '.'+tab
-    for key,value of childs
-      do (key,value)=>
-        console.log 'parsing:',key,value.type
-        html += @parseTabChild key,value,level
-        console.log 'html:',html
-
-
-
+    if level==0
+      html += @makeTabs name,obj,0
+    else
+      props = obj.properties
+      for key,value of props
+        do (key,value)=>
+          html += @parseTabChild key,value,level++
 
   loadSettings:->
     @settings = {}
-    @schema = atom.config.schema.properties[@packageName].properties
+    @schema = atom.config.schema.properties[@packageName]
     @config = atom.config.get(@packageName)
     @default = atom.config.getDefault(@packageName)
-    @tabs = {}
     @path = ''
-    tabs = Object.keys(@schema)
-    for tab in tabs
-      do (tab)=>
-        clean = @cleanName tab
-        @tabs[clean]={}
-
-    for tab in tabs
-      do (tab)=>
-        childs = @schema[tab].properties
-        @parseTabChilds tab,childs
+    @html = '<div id="editor-background-config">'
+    @html += @parseObjectChild @packageName,@schema,0
+    @html += "</div>"
+    console.log '@html',$(@html)
 
 
   getSettings:->
+    return
     values = {}
     console.log 'popup controls',@popup.controls
     for name,elem of @popup.controls
@@ -234,12 +287,15 @@ class ConfigWindow
 
 
   activateTab:(index)->
+    @tabs = $(@configWnd).find('.tab')
     for i in [0..(@tabs.length-1)]
       do (i)=>
         if i==index
           @tabs[i].className='tab active'
         else
           @tabs[i].className = 'tab'
+
+    @tabsContent = $(@configWnd).find('.tab-content')
 
     for j in [0..(@tabsContent.length-1)]
       do (j)=>
