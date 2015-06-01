@@ -17,6 +17,7 @@ class ConfigWindow
       @onShow = options.onShow
     if options?.onHide?
       @onHide = options.onHide
+    @html = ''
     @cleanPackageName = @cleanName(@packageName)
     @title = @cleanName+" settings"
     @content = '
@@ -93,11 +94,17 @@ class ConfigWindow
   cleanName:(name)->
     name
 
-  generateTabs:(tabs)->
-    str = ''
-    for tab
+  getConfigValue:(fullPath)->
+    atom.config.get @packageName+'.'+fullPath
 
-  generateString:(name,value)->
+
+  parseStringChild:(name,obj)->
+    if obj.title?
+      cleanName = obj.title
+    else
+      cleanName = @cleanName(name)
+    fullPath = @path+'.'+name
+    value = getConfigValue fullPath
     str =
       "<div class='group'>
         <label for='#{name}'>#{cleanName}</label>
@@ -105,27 +112,59 @@ class ConfigWindow
       </div>"
     str
 
+  parseIntegerChild:(obj)->
 
-  parseTabChilds:(tab,childs)->
+  parseNumberChild:(obj)->
+
+  parseBooleanChild:(obj)->
+
+  parseObjectChild:(obj)->
+
+  parseArrayChild:(obj)->
+
+  parseEnumChild:(obj)->
+
+  parseColorChild:(obj)->
+
+  parseTabChild:(name,value,level)->
+
+    parsers = {
+      'string':@parseStringChild,
+      'integer':@parseIntegerChild,
+      'number':@parseNumberChild,
+      'boolean':@parseBooleanChild,
+      'object':@parseObjectChild,
+      'array':@parseArrayChild,
+      'enum':@parseEnumChild,
+      'color':@parseColorChild
+    }
+
+    parsers[value.type] name,value
+
+  parseTabChilds:(tab,childs,level)->
+    html = ''
+    @path = @path + '.'+tab
     for key,value of childs
       do (key,value)=>
-        console.log key,value
+        console.log 'parsing:',key,value.type
+        html += @parseTabChild key,value,level
+        console.log 'html:',html
+
+
 
 
   loadSettings:->
     @settings = {}
-    @schema = atom.config.schema.properties[@packageNam].properties
+    @schema = atom.config.schema.properties[@packageName].properties
     @config = atom.config.get(@packageName)
     @default = atom.config.getDefault(@packageName)
     @tabs = {}
-
+    @path = ''
     tabs = Object.keys(@schema)
     for tab in tabs
       do (tab)=>
         clean = @cleanName tab
         @tabs[clean]={}
-
-    @html = @generateTabs @tabs
 
     for tab in tabs
       do (tab)=>

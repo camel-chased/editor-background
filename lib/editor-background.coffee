@@ -741,8 +741,9 @@ module.exports = EditorBackground =
 
       @insertMain()
       @popup = new popup()
-      @configWnd = new configWindow =>@drawBackground()
-
+      @configWnd = new configWindow 'editor-background'
+      @configWnd.loadSettings()
+      return
       @activateMouseMove()
 
       conf=atom.config.get('editor-background')
