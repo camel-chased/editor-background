@@ -45,124 +45,133 @@ colorToArray = (str) ->
 
 module.exports = EditorBackground =
   config:
-    imageURL:
-      type:'string'
-      default:'atom://editor-background/bg.jpg'
-      order:0
-      description:"URL of your image. It can be http://...
-      or just /home/yourname/image.jpg"
-    youTubeURL:
-      type:'string'
-      default:''
-      order:1
-      description:"Search for 'background loop',
-      'background animation' or similar on youtube and paste url here."
-    animationSpeed:
-      type:"integer"
-      default:100
-      order:2
-      description:"animation speed in ms (original is 50),
-      LOWER VALUE = HIGHER CPU USAGE"
-    startTime:
-      type:"string"
-      default:'0s'
-      order:3
-      description:"video start time like 1h30m10s or 10s"
-    endTime:
-      type:"string"
-      default:"20s"
-      description:"video end time like 1h30m30s or 30s"
-      order:4
-    textBackground:
-      type:"color"
-      default:"rgb(0,0,0)"
-      order:5
-      description:"background color for text/code"
-    textBackgroundOpacity:
-      type:"integer"
-      default:100
-      order:6
-    textBackgroundBlurRadius:
-      type:"integer"
-      default:5
-      order:7
-    textBackgroundExpand:
-      type:"integer"
-      default:4
-      description:"If you want larger area under text - try 4 or 10"
-      order:8
-    backgroundSize:
-      type:"string"
-      default:"original"
-      enum:["original","100%","cover","manual"]
-      description:"Background size"
-      order:9
-    manualBackgroundSize:
-      type:"string"
-      default:""
-      description:"'100px 100px' or '50%' try something..."
-      order:10
-    customOverlayColor:
-      type:"boolean"
-      default:false
-      order:11
-      description:"Do you want different color on top of background? check this"
-    overlayColor:
-      type:'color'
-      default:'rgba(0,0,0,0)'
-      description:"Color used to overlay background image"
-      order:12
-    opacity:
-      type:'integer'
-      default:'100'
-      description:"Background image visibility percent 1-100"
-      order:13
-    treeViewOpacity:
-      type:'integer'
-      default:"35"
-      description:"Tree View can be transparent too :)"
-      order:14
-    transparentTabBar:
-      type:"boolean"
-      default:true
-      desctiption:"Transparent background under file tabs"
-      order:15
-    mouseFactor:
-      type:"integer"
-      default: 0
-      description: "move background with mouse (higher value = slower)
-      try 8 or 4 for 3dbox or 20 for wallpaper"
-      order:16
-    textShadow:
-      type:"string"
-      default:"none"
-      description:"Add a little text shadow to code like
-      '0px 2px 2px rgba(0,0,0,0.3)' "
-      order:17
-    style:
-      type:"string"
-      default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
-      description:"Your custom css rules :]"
-      order:18
-    boxDepth:
-      type:"integer"
-      default: 0
-      minimum: 0
-      maximum: 2000
-      description:"This is pseudo 3D Cube. Try 500 or 1500 or
-      something similar..."
-    boxShadowOpacity:
-      type:"integer"
-      default:30
-      minimum:0
-      maximum:100
-      description:"shadow that exists in every corner of the box"
-    blurRadius:
-      type:"integer"
-      description:"Background image blur. 0 = none"
-      default:0
-      minimim:0
-      maximum: 200
+    image:
+      type:'object'
+      properties:
+        url:
+          type:'string'
+          toolbox:'file'
+          default:'atom://editor-background/bg.jpg'
+          description:"URL of your image. It can be http://...
+          or just /home/yourname/image.jpg"
+        blurRadius:
+          type:"integer"
+          description:"Background image blur. 0 = none"
+          default:0
+          minimim:0
+          maximum: 200
+        backgroundSize:
+          type:"string"
+          default:"original"
+          enum:["original","100%","cover","manual"]
+          description:"Background size"
+        manualBackgroundSize:
+          type:"string"
+          default:""
+          description:"'100px 100px' or '50%' try something..."
+        customOverlayColor:
+          type:"boolean"
+          default:false
+          description:"Do you want different color on top of background?"
+        overlayColor:
+          type:'color'
+          default:'rgba(0,0,0,0)'
+          description:"Color used to overlay background image"
+        opacity:
+          type:'integer'
+          default:'100'
+          description:"Background image visibility percent 1-100"
+          minimum:0
+          maximum:100
+        style:
+          type:"string"
+          default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
+          description:"Your custom css rules :]"
+
+    text:
+      type:'object'
+      properties:
+        color:
+          type:"color"
+          default:"rgb(0,0,0)"
+          description:"background color for text/code"
+        opacity:
+          type:"integer"
+          default:100
+        blur:
+          type:"integer"
+          default:5
+        expand:
+          type:"integer"
+          default:4
+          description:"If you want larger area under text - try 4 or 10"
+        shadow:
+          type:"string"
+          default:"none"
+          description:"Add a little text shadow to code like
+          '0px 2px 2px rgba(0,0,0,0.3)' "
+
+    video:
+      type:'object'
+      properties:
+        youTubeURL:
+          type:'string'
+          default:''
+          description:"Search for 'background loop',
+          'background animation' or similar on youtube and paste url here."
+        animationSpeed:
+          type:"integer"
+          default:100
+          description:"animation speed in ms (original is 50),
+          LOWER VALUE = HIGHER CPU USAGE"
+        startTime:
+          type:"string"
+          default:'0s'
+          description:"video start time like 1h30m10s or 10s"
+        endTime:
+          type:"string"
+          default:"20s"
+          description:"video end time like 1h30m30s or 30s"
+
+
+
+    other:
+      type:'object'
+      properties:
+        treeViewOpacity:
+          type:'integer'
+          default:"35"
+          description:"Tree View can be transparent too :)"
+
+        transparentTabBar:
+          type:"boolean"
+          default:true
+          desctiption:"Transparent background under file tabs"
+
+
+    box3d:
+      type:'object'
+      properties:
+        depth:
+          type:"integer"
+          default: 0
+          minimum: 0
+          maximum: 2000
+          description:"This is pseudo 3D Cube. Try 500 or 1500 or
+          something similar..."
+        shadowOpacity:
+          type:"integer"
+          default:30
+          minimum:0
+          maximum:100
+          description:"shadow that exists in every corner of the box"
+        mouseFactor:
+          type:"integer"
+          default: 0
+          description: "move background with mouse (higher value = slower)
+          try 8 or 4 for 3dbox or 20 for wallpaper"
+
+
 
 
   packagesLoaded:false
@@ -181,9 +190,9 @@ module.exports = EditorBackground =
       'editor-background:toggle': => @toggle()
     atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-    atom.config.observe 'editor-background.imageURL',(url)=>
+    atom.config.observe 'editor-background.image.url',(url)=>
       @blurImage.apply @,[url]
-    atom.config.observe 'editor-background.youTubeURL',(url) =>
+    atom.config.observe 'editor-background.video.youTubeURL',(url) =>
       @startYouTube.apply @,[url]
     @initialize()
 
@@ -226,10 +235,10 @@ module.exports = EditorBackground =
 
   mouseMove: (ev) ->
     conf=atom.config.get('editor-background')
-    if conf.mouseFactor > 0
+    if conf.box3d.mouseFactor > 0
       @mouseX=ev.pageX
       @mouseY=ev.pageY
-      if conf.boxDepth>0 then @updateBox() else @updateBgPos()
+      if conf.box3d.depth>0 then @updateBox() else @updateBgPos()
 
 
 
@@ -308,7 +317,7 @@ module.exports = EditorBackground =
     video = @elements.video
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
-    ytid = @getYTId atom.config.get 'editor-background.youTubeURL'
+    ytid = @getYTId atom.config.get 'editor-background.video.youTubeURL'
 
     html="
     <div id='editor-background-modal' style='overflow:hidden'>
@@ -483,8 +492,8 @@ module.exports = EditorBackground =
         @yt.on 'ready',=>
           conf = atom.config.get('editor-background')
           @time = {
-            start:conf.startTime,
-            end:conf.endTime
+            start:conf.video.startTime,
+            end:conf.video.endTime
           }
           @chooseFormat @yt.formats,(format)=>
             @videoWidth = @yt.formats[format].width
@@ -506,8 +515,8 @@ module.exports = EditorBackground =
     if @packagesLoaded
       @removeVideo()
       conf = atom.config.get 'editor-background'
-      if conf.youTubeURL? != ''
-        @downloadYTVideo conf.youTubeURL
+      if conf.video.youTubeURL? != ''
+        @downloadYTVideo conf.video.youTubeURL
       else
         @removeVideo()
     else
@@ -559,10 +568,10 @@ module.exports = EditorBackground =
         if editor.constructor.name == 'atom-text-editor'
 
           conf = atom.config.get('editor-background')
-          textBlur = conf.textBackgroundBlurRadius
-          opacity = (conf.textBackgroundOpacity/100).toFixed(2)
-          color = conf.textBackground.toRGBAString()
-          expand = conf.textBackgroundExpand
+          textBlur = conf.text.blur
+          opacity = (conf.text.opacity/100).toFixed(2)
+          color = conf.text.color.toRGBAString()
+          expand = conf.text.expand
 
           root = editor.shadowRoot
           scrollView = root.querySelector '.scroll-view'
@@ -742,11 +751,11 @@ module.exports = EditorBackground =
       @elements.image.id='editor-background-image'
       @elements.image.setAttribute 'src',conf.imageURL
 
-      @elements.blurredImage = conf.imageURL
+      @elements.blurredImage = conf.image.url
 
       @insertTextBackgroundCss()
 
-      if conf.mouseFactor>0 then @activateMouseMove()
+      if conf.box3d.mouseFactor>0 then @activateMouseMove()
       @elements.plane = document.createElement('div')
       @elements.plane.style.cssText = planeInitialCss
       @elements.main.appendChild @elements.plane
@@ -783,7 +792,7 @@ module.exports = EditorBackground =
   updateBgPos: ->
     conf = atom.config.get('editor-background')
     body = qr 'body'
-    factor = conf.mouseFactor
+    factor = conf.box3d.mouseFactor
     polowaX = body.clientWidth // 2
     polowaY = body.clientHeight // 2
     offsetX =  @mouseX - polowaX
@@ -794,7 +803,7 @@ module.exports = EditorBackground =
 
   updateBox: (depth) ->
     conf=atom.config.get('editor-background')
-    if not depth? then depth = conf.boxDepth
+    if not depth? then depth = conf.box.depth
     depth2 = depth // 2
     background=@elements.blurredImage
     opacity=(conf.boxOpacity / 100).toFixed(2)
@@ -804,7 +813,7 @@ module.exports = EditorBackground =
     if bgSize=='manual' then bgSize=conf.manualBackgroundSize
     if bgSize=='original' then bgSize='auto'
     body = qr 'body'
-    factor = conf.mouseFactor
+    factor = conf.box3d.mouseFactor
     polowaX = body.clientWidth // 2
     polowaY = body.clientHeight // 2
     offsetX =  @mouseX - polowaX
@@ -868,16 +877,16 @@ module.exports = EditorBackground =
   blurImage:->
     if @packagesLoaded
       conf = atom.config.get('editor-background')
-      @elements.image.setAttribute 'src',conf.imageURL
+      @elements.image.setAttribute 'src',conf.image.url
       applyBlur = false
-      if conf.blurRadius > 0
+      if conf.image.blur > 0
         if @elements.image?
           if @elements.image.complete
             applyBlur = true
           else
             setTimeout (=> @blurImage.apply @),1000
-      if applyBlur and conf.imageUrl
-        imageData = blur.stackBlurImage @elements.image, conf.blurRadius, false
+      if applyBlur and conf.image.url
+        imageData = blur.stackBlurImage @elements.image, conf.image.blur, false
         base64Data = imageData.replace(/^data:image\/png;base64,/, "")
         filename = atom.packages.resolvePackagePath('editor-background')+
         "/blur.png"
@@ -885,9 +894,9 @@ module.exports = EditorBackground =
         fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
         imageData=filename+"?timestamp="+Date.now()
       else
-        imageData = conf.imageURL
+        imageData = conf.image.url
       @elements.blurredImage = imageData
-      if conf.boxDepth > 0
+      if conf.box.depth > 0
         @updateBox()
       else
         inline @elements.bg,"background-image: url('#{imageData}') !important"
@@ -901,55 +910,55 @@ module.exports = EditorBackground =
       if workspaceView?
         workspaceView.className += ' editor-background'
       conf = atom.config.get 'editor-background'
-      opacity = 100 - conf.opacity
+      opacity = 100 - conf.image.opacity
       alpha=(opacity / 100).toFixed(2)
 
       rgb = colorToArray @colors.workspaceBgColor
       newColor = 'rgba( '+rgb[0]+' , '+rgb[1]+' , '+rgb[2]+' , '+alpha+')'
 
-      treeOpacity = conf.treeViewOpacity
+      treeOpacity = conf.other.treeViewOpacity
       treeAlpha = (treeOpacity / 100).toFixed(2)
       treeRGB = colorToArray @colors.treeOriginalRGB
 
       newTreeRGBA =
         'rgba('+treeRGB[0]+','+treeRGB[1]+','+treeRGB[2]+','+treeAlpha+')'
 
-      if conf.customOverlayColor
-        newColor = conf.overlayColor.toRGBAString()
+      if conf.image.customOverlayColor
+        newColor = conf.image.overlayColor.toRGBAString()
         rgb = colorToArray newColor
         newColor = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha+')'
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
 
 
-      if conf.textShadow
+      if conf.text.shadow
         @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+
-        conf.textShadow+" !important;}"
+        conf.text.shadow+" !important;}"
 
       if conf.boxDepth>0
-        @updateBox conf.boxDepth
+        @updateBox conf.box.depth
       else
         @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
-      if conf.backgroundSize!='original'
-        inline @elements.bg, 'background-size:'+conf.backgroundSize+
+      if conf.image.size!='original'
+        inline @elements.bg, 'background-size:'+conf.image.size+
         ' !important;'
       else
         inline @elements.bg, 'background-size:auto !important'
-      if conf.manualBackgroundSize
-        inline @elements.bg, 'background-size:'+conf.manualBackgroundSize+
+      if conf.image.manualBackgroundSize
+        inline @elements.bg, 'background-size:'+conf.image.manualBackgroundSize+
         ' !important;'
 
-      if conf.style
+      if conf.image.style
         @elements.plane.style.cssText+=conf.style
 
-      if conf.transparentTabBar
+      if conf.other.transparentTabBar
         inline @elements.tabBar,'background:rgba(0,0,0,0) !important;'
         inline @elements.insetPanel,'background:rgba(0,0,0,0) !important;'
 
       inline @elements.workspace,'background:'+newColor+' !important;'
 
 
-      if conf.treeViewOpacity > 0
+      if conf.other.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
         inline @elements.left,'background:transparent !important;'
         inline @elements.resizer,'background:transparent !important;'

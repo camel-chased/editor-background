@@ -9,9 +9,16 @@ class ConfigWindow
   settings = {}
   popup = null
 
-  constructor:(onApply)->
-    @onApply = onApply
-    @title = "Editor Background - config - work in progress ;)"
+  constructor:(@packageName,options)->
+
+    if options?.onChange?
+      @onChange = options.onChange
+    if options?.onshow?
+      @onShow = options.onShow
+    if options?.onHide?
+      @onHide = options.onHide
+    @cleanPackageName = @cleanName(@packageName)
+    @title = @cleanName+" settings"
     @content = '
     <div id="editor-background-config">
       <div class="config-tabs">
@@ -83,27 +90,47 @@ class ConfigWindow
       null
 
 
+  cleanName:(name)->
+    name
+
+  generateTabs:(tabs)->
+    str = ''
+    for tab
+
+  generateString:(name,value)->
+    str =
+      "<div class='group'>
+        <label for='#{name}'>#{cleanName}</label>
+        <input type='text' name='#{name}' id='#{name}' value='#{value}'>
+      </div>"
+    str
+
+
+  parseTabChilds:(tab,childs)->
+    for key,value of childs
+      do (key,value)=>
+        console.log key,value
+
+
   loadSettings:->
     @settings = {}
-    conf = atom.config.get('editor-background')
-    confDefault = atom.config.getDefault('editor-background')
-    keys = Object.keys(conf)
-    for key in keys
-      @settings[key]=conf[key]
-      if !@settings[key] and confDefault[key]?
-        @settings[key] = confDefault[key]
-    console.log 'settings',@settings
-    console.log 'popup controls',@popup.controls
-    for name,elem of @popup.controls
-      do (name,elem)=>
-        if elem.type!='file'
-          val = @settings[elem.name]
-          type = @type val
-          if type?
-            if type == 'Color'
-              val = val.toHexString()
-          elem.value = val
-          $(elem).trigger('change')
+    @schema = atom.config.schema.properties[@packageNam].properties
+    @config = atom.config.get(@packageName)
+    @default = atom.config.getDefault(@packageName)
+    @tabs = {}
+
+    tabs = Object.keys(@schema)
+    for tab in tabs
+      do (tab)=>
+        clean = @cleanName tab
+        @tabs[clean]={}
+
+    @html = @generateTabs @tabs
+
+    for tab in tabs
+      do (tab)=>
+        childs = @schema[tab].properties
+        @parseTabChilds tab,childs
 
 
   getSettings:->

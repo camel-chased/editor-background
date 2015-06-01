@@ -14,15 +14,15 @@ class Animation
   constructor: (ytid) ->
     @loaded = 0
     @playing = false
-    @speed = atom.config.get 'editor-background.animationSpeed'
-    atom.config.observe 'editor-background.animationSpeed',(speed)=>
+    @speed = atom.config.get 'editor-background.video.animationSpeed'
+    atom.config.observe 'editor-background.video.animationSpeed',(speed)=>
       @setSpeed(speed)
     @homeDir = atom.packages.resolvePackagePath('editor-background')
     @videoDir = @homeDir + '/youtube-videos'
     if ytid?
       @ytid = ytid
     else
-      url = atom.config.get 'editor-background.youTubeUrl'
+      url = atom.config.get 'editor-background.video.youTubeUrl'
       if url? then @ytid = @getYTid(url)
     if @ytid then @animPath = @videoDir+'/'+@ytid+'_images/'
 
@@ -87,7 +87,7 @@ class Animation
       @ctx.globalAlpha = alpha
       @ctx.drawImage @frames[index],0,0
     @currentFrame++
-    
+
 
   animate:->
     if @playing
@@ -119,7 +119,7 @@ class Animation
     height:#{height}px;
     transform:scale(#{ratio}) translate3d(0,0,0);
     "
-    atom.config.observe 'editor-background.blurRadius',(radius)=>
+    atom.config.observe 'editor-background.image.blur',(radius)=>
       @canvas.style.webkitFilter="blur(#{radius}px)"
     @ctx = @canvas.getContext '2d'
     if @before?
