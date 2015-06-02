@@ -170,17 +170,18 @@ class ConfigWindow
       'array':(name,value)=>@parseArrayChild name,value,
       'color':(name,value)=>@parseColorChild  name,value
     }
-    console.log 'parsing child tab',name
+    console.log 'parsing child tab',name,level
     if not value.enum?
-      parsers[value.type] name,value
+      parsers[value.type] name,value,level+1
     else
-      @parseEnumChild name,value
+      @parseEnumChild name,value,level+1
 
-  makeTabs:(name,obj,level)->
+  makeTabs:(name,obj)->
     cleanName = @getChildCleanName name,obj
     props = obj.properties
     tabs = Object.keys(props)
     console.log 'tabs',tabs
+    level = 0
     html = "<div class='config-tabs'>"
     index = 0
     for tab in tabs
@@ -194,13 +195,14 @@ class ConfigWindow
       do (key,value) =>
         console.log 'parsing tab content',key
         html += "<div class='tab-content' id='content-tab-index-#{index}'>"
-        html += @parseTabChild key,value,level+1
+        html += @parseObjectChild key,value,1
         html += "</div>"
     html += "</div>"
     html
 
   parseObjectChild:(name,obj,level)->
-    console.log 'name,obj',name,obj
+    if !level? then level = 0
+    console.log 'parsing object child',name,obj,level
     if level > 10
       console.error 'too much levels... :/'
       throw new Error('something goes terribly wrong... I\'m going out of here')
@@ -212,7 +214,8 @@ class ConfigWindow
       props = obj.properties
       for key,value of props
         do (key,value)=>
-          html += @parseTabChild key,value,level++
+          html += @parseTabChild key,value,level+1
+    html
 
   loadSettings:->
     @settings = {}
