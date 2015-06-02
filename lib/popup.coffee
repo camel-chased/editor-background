@@ -6,6 +6,7 @@ colorpicker = require './colorpicker.js'
 class Popup
 
   element = null
+  content = null
   fadeTime =250
   visible = false
   onHide = null
@@ -95,8 +96,9 @@ class Popup
     contentHTML = attrs.content
     titleEl = @element.querySelector '.title'
     contentEl = @element.querySelector '.content'
+    @content = contentEl
     buttonsEl = @element.querySelector '.buttons'
-
+    @buttons = buttonsEl
     buttonsEl.innerHTML=""
     titleEl.innerHTML = titleHTML
     contentEl.innerHTML = contentHTML

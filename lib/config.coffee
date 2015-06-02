@@ -20,7 +20,7 @@ class ConfigWindow
     @html = ''
     @cleanPackageName = @cleanName(@packageName)
     @title = @cleanName+" settings"
-    
+
     @buttons = {
       "Apply":(ev,popup)=> @applyConfig(ev,popup),
       "Close":(ev,popup)=> @close(ev,popup)
@@ -63,12 +63,10 @@ class ConfigWindow
     console.log 'value',value
     if not value?
       value = ''
-    str =
-      "<div class='group'>
-        <label for='#{name}'>#{cleanName}</label>
-        <input type='text' name='#{name}' id='#{name}' value='#{value}'>
-      </div>"
-    str
+    "<div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
+      <input type='text' name='#{name}' id='#{name}' value='#{value}'>
+    </div>"
 
   parseSliderChild:(name,obj,step)->
     cleanName = @getChildCleanName name,obj
@@ -78,8 +76,8 @@ class ConfigWindow
     "
     <div class='group'>
       <label for='#{name}'>#{cleanName}</label>
-      <input type='number' class='range' 
-        data-slider-range='#{min},#{max}' 
+      <input type='number' class='range'
+        data-slider-range='#{min},#{max}'
         data-slider-step='#{step}'
         name='#{name}' id='#{name}' value='#{value}'>
     </div>
@@ -172,6 +170,7 @@ class ConfigWindow
       'array':(name,value)=>@parseArrayChild name,value,
       'color':(name,value)=>@parseColorChild  name,value
     }
+    console.log 'parsing child tab',name
     if not value.enum?
       parsers[value.type] name,value
     else
@@ -186,12 +185,14 @@ class ConfigWindow
     index = 0
     for tab in tabs
       do (tab)->
+        console.log 'parsing tab',tab
         html += "<div class='tab' id='tab-index-#{index}'>#{tab}</div>"
     html += "</div>" # header tabs
 
     html+="<div class='config-content'>"
     for key,value of props
       do (key,value) =>
+        console.log 'parsing tab content',key
         html += "<div class='tab-content' id='content-tab-index-#{index}'>"
         html += @parseTabChild key,value,level+1
         html += "</div>"
@@ -201,6 +202,7 @@ class ConfigWindow
   parseObjectChild:(name,obj,level)->
     console.log 'name,obj',name,obj
     if level > 10
+      console.error 'too much levels... :/'
       throw new Error('something goes terribly wrong... I\'m going out of here')
       return
     html = ''
@@ -221,8 +223,6 @@ class ConfigWindow
     @html = '<div id="editor-background-config">'
     @html += @parseObjectChild @packageName,@schema,0
     @html += "</div>"
-    console.log '@html',$(@html)
-
 
   getSettings:->
     return
@@ -252,6 +252,7 @@ class ConfigWindow
     @popup.controls.imageURL.value = path
 
   bindEvents:->
+    return
     imageURLFileBtn = @configWnd.querySelector '#imageURLFileBtn'
     imageURLFileBtn.addEventListener 'click',(ev)=>@imageURLFileChooser(ev)
     imageURLFile = @configWnd.querySelector '#imageURLFile'
@@ -261,6 +262,7 @@ class ConfigWindow
   onShow:(popup)->
     @popup = popup
     @loadSettings()
+    popup.content.innerHTML = @html
     @configWnd = popup.element.querySelector '#editor-background-config'
     @tabs = @configWnd.querySelectorAll '.tab'
     @tabsContent = @configWnd.querySelectorAll '.tab-content'
