@@ -742,7 +742,6 @@ module.exports = EditorBackground =
       @insertMain()
       @popup = new popup()
       @configWnd = new configWindow 'editor-background'
-      @configWnd.loadSettings()
       return
       @activateMouseMove()
 
@@ -971,16 +970,7 @@ module.exports = EditorBackground =
 
   # show config window
   toggle:->
-    if not @popup.visible
-      attrs=
-      {
-        title:@configWnd.title,
-        content:@configWnd.content,
-        buttons:@configWnd.buttons,
-        onShow:(popup)=>
-          @configWnd.onShow(popup)
-      }
-      @popup.show attrs
-
+    if not @configWnd.visible
+      @configWnd.show()
     else
       @popup.hide()

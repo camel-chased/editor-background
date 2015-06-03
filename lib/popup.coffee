@@ -11,6 +11,7 @@ class Popup
   visible = false
   onHide = null
   controls = {}
+  title = ''
 
   constructor:(appendElement)->
     if not appendElement?
@@ -29,13 +30,14 @@ class Popup
     @element = document.createElement 'div'
     @element.className = 'eb-modal-window'
     @element.innerHTML = html
+    @content = @element.querySelector '.content'
     fadeTime = @fadeTime
     @element.style.transition = "opacity #{fadeTime}ms"
     @element.style.webkitTransition = "opacity #{fadeTime}ms"
     close = @element.querySelector '.close'
     close.addEventListener 'click',(ev)=>
       @hide()
-    title = @element.querySelector '.title'
+    @title = @element.querySelector '.title'
     #title.addEventListener 'mousedown',(ev)=>
       #@dragWindow(ev)
     appendElement.appendChild @element
@@ -49,12 +51,13 @@ class Popup
     h_ = window.getComputedStyle(@element).height
     ww = /([0-9]+)/gi.exec(w_)
     hh = /([0-9]+)/gi.exec(h_)
-    w = ww[1]
-    h = hh[1]
-    w2 = w // 2
-    h2 = h // 2
-    @element.style.left = "calc(50% - #{w2}px)"
-    @element.style.top = "calc(50% - #{h2}px)"
+    if ww? and hh?
+      w = ww[1]
+      h = hh[1]
+      w2 = w // 2
+      h2 = h // 2
+      @element.style.left = "calc(50% - #{w2}px)"
+      @element.style.top = "calc(50% - #{h2}px)"
 
   getControls:->
     @controls = {}
@@ -91,7 +94,19 @@ class Popup
         $(cpicker).focus ->
           $(cpicker).colorpicker('show')
 
+  setVisible:->
+    @element.style.display='block'
+    @element.style.opacity = 1
+    @visible = true
+    @center()
+    @getControls()
+    @makeSliders()
+    @makeColors()
+
   show:(attrs)->
+    if not attrs?
+      return @setVisible()
+
     titleHTML = attrs.title
     contentHTML = attrs.content
     titleEl = @element.querySelector '.title'
@@ -119,13 +134,7 @@ class Popup
             action(ev,@)
           buttonsEl.appendChild btn
 
-    @element.style.display='block'
-    @element.style.opacity = 1
-    @visible = true
-    @center()
-    @getControls()
-    @makeSliders()
-    @makeColors()
+    @setVisible()
     if attrs?.onShow?
       attrs.onShow(@)
 

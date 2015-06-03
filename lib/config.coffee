@@ -1,5 +1,6 @@
 fs = require 'fs'
 {$} = require 'atom-space-pen-views'
+popup = require './popup'
 
 class ConfigWindow
 
@@ -7,7 +8,7 @@ class ConfigWindow
   content = null
   buttons = null
   settings = {}
-  popup = null
+
 
   constructor:(@packageName,options)->
 
@@ -18,6 +19,7 @@ class ConfigWindow
     if options?.onHide?
       @onHide = options.onHide
     @html = ''
+    @popup = new popup()
     @cleanPackageName = @cleanName(@packageName)
     @title = @cleanName+" settings"
 
@@ -25,6 +27,7 @@ class ConfigWindow
       "Apply":(ev,popup)=> @applyConfig(ev,popup),
       "Close":(ev,popup)=> @close(ev,popup)
     }
+    @loadSettings()
 
   type:(object)->
     funcNameRegex = /function (.{1,})\(/
@@ -57,10 +60,25 @@ class ConfigWindow
       cleanName = obj.title
     cleanName
 
-  parseStringChild:(name,obj)->
+  parseFileChild:(name,obj)->
     cleanName = @getChildCleanName name,obj
     value = @getConfigValue name,obj
-    console.log 'value',value
+    if not value? then value = ''
+    "
+    <div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
+      <input type='text' name='#{name}' id='#{name}' value='#{value}'>
+      <button class='btn btn-default file-btn'>...</button>
+      <input type='file' id='file-#{name}' style='display:none;'>
+    </div>
+    "
+
+  parseStringChild:(name,obj)->
+    if obj.toolbox?
+      if obj.toolbox == 'file'
+        return @parseFileChild name,obj
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
     if not value?
       value = ''
     "<div class='group'>
@@ -217,6 +235,7 @@ class ConfigWindow
           html += @parseTabChild key,value,level+1
     html
 
+
   loadSettings:->
     @settings = {}
     @schema = atom.config.schema.properties[@packageName]
@@ -226,6 +245,19 @@ class ConfigWindow
     @html = '<div id="editor-background-config">'
     @html += @parseObjectChild @packageName,@schema,0
     @html += "</div>"
+
+    @popup.content.innerHTML = @html
+    @popup.title = @packageName
+    @configWnd = @popup.element.querySelector '#editor-background-config'
+    @tabs = @configWnd.querySelectorAll '.tab'
+    @tabsContent = @configWnd.querySelectorAll '.tab-content'
+    for index in [0..(@tabs.length-1)]
+      do (index)=>
+        @tabs[index].addEventListener 'click',(ev)=>
+          @activateTab index
+
+    @activateTab 0
+    @bindEvents()
 
   getSettings:->
     return
@@ -244,40 +276,21 @@ class ConfigWindow
     for key in keys
       atom.config.set('editor-background.'+key,settings[key])
 
-  imageURLFileChooser:->
-    fileSelect = @configWnd.querySelector '#imageURLFile'
-    console.log 'fileSelect',fileSelect
-    fileSelect.click()
+  fileChooser:(ev)->
+    elem = ev.target
+    $(elem).parent().children('input[type="file"]').click();
 
-
-  imageURLFileChanged:(ev,file)->
-    path = file.files[0].path
-    @popup.controls.imageURL.value = path
+  fileChanged:(ev)->
+    if ev.target.files[0]?
+      file = ev.target.files[0]
+      path = file.path
+      $(ev.target).parent().children('input[type="text"]').val(path)
 
   bindEvents:->
-    return
-    imageURLFileBtn = @configWnd.querySelector '#imageURLFileBtn'
-    imageURLFileBtn.addEventListener 'click',(ev)=>@imageURLFileChooser(ev)
-    imageURLFile = @configWnd.querySelector '#imageURLFile'
-    imageURLFile.addEventListener 'change',(ev)=>@imageURLFileChanged(ev,imageURLFile)
-
-
-  onShow:(popup)->
-    @popup = popup
-    @loadSettings()
-    popup.content.innerHTML = @html
-    @configWnd = popup.element.querySelector '#editor-background-config'
-    @tabs = @configWnd.querySelectorAll '.tab'
-    @tabsContent = @configWnd.querySelectorAll '.tab-content'
-    @bindEvents()
-
-    for index in [0..(@tabs.length-1)]
-      do (index)=>
-        @tabs[index].addEventListener 'click',(ev)=>
-          @activateTab index
-
-    @activateTab 0
-
+    $(@configWnd).find('.file-btn').on 'click',(ev)=>@fileChooser(ev)
+    file = @configWnd.querySelector 'input[type="file"]' 
+    file.addEventListener 'change',(ev)=>
+      @fileChanged(ev)
 
   applyConfig:(ev,popup)->
     settings = @getSettings()
@@ -288,11 +301,11 @@ class ConfigWindow
 
 
   close:(ev,popup)->
-    popup.hide()
+    @popup.hide()
 
 
   activateTab:(index)->
-    @tabs = $(@configWnd).find('.tab')
+    @tabs = $(@popup.element).find('.tab')
     for i in [0..(@tabs.length-1)]
       do (i)=>
         if i==index
@@ -300,7 +313,7 @@ class ConfigWindow
         else
           @tabs[i].className = 'tab'
 
-    @tabsContent = $(@configWnd).find('.tab-content')
+    @tabsContent = $(@popup.element).find('.tab-content')
 
     for j in [0..(@tabsContent.length-1)]
       do (j)=>
@@ -309,5 +322,11 @@ class ConfigWindow
         else
           @tabsContent[j].className = "tab-content"
     @popup.center()
+
+  show:->
+    @popup.show()
+
+  hide:->
+    @popup.hide()
 
 module.exports = ConfigWindow
