@@ -85,9 +85,9 @@ module.exports = EditorBackground =
           maximum:100
         style:
           type:"string"
+          toolbox:"text"
           default:"background:radial-gradient(rgba(0,0,0,0) 30%,rgba(0,0,0,0.75));"
           description:"Your custom css rules :]"
-
     text:
       type:'object'
       properties:
@@ -110,7 +110,6 @@ module.exports = EditorBackground =
           default:"none"
           description:"Add a little text shadow to code like
           '0px 2px 2px rgba(0,0,0,0.3)' "
-
     video:
       type:'object'
       properties:
@@ -132,9 +131,6 @@ module.exports = EditorBackground =
           type:"string"
           default:"20s"
           description:"video end time like 1h30m30s or 30s"
-
-
-
     other:
       type:'object'
       properties:
@@ -147,8 +143,6 @@ module.exports = EditorBackground =
           type:"boolean"
           default:true
           desctiption:"Transparent background under file tabs"
-
-
     box3d:
       type:'object'
       properties:
@@ -570,7 +564,8 @@ module.exports = EditorBackground =
           conf = atom.config.get('editor-background')
           textBlur = conf.text.blur
           opacity = (conf.text.opacity/100).toFixed(2)
-          color = conf.text.color.toRGBAString()
+          color = conf.text.color
+          console.log 'color',color
           expand = conf.text.expand
 
           root = editor.shadowRoot
@@ -742,7 +737,6 @@ module.exports = EditorBackground =
       @insertMain()
       @popup = new popup()
       @configWnd = new configWindow 'editor-background'
-      return
       @activateMouseMove()
 
       conf=atom.config.get('editor-background')
@@ -896,7 +890,7 @@ module.exports = EditorBackground =
       else
         imageData = conf.image.url
       @elements.blurredImage = imageData
-      if conf.box.depth > 0
+      if conf.box3d.depth > 0
         @updateBox()
       else
         inline @elements.bg,"background-image: url('#{imageData}') !important"

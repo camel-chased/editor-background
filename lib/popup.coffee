@@ -11,7 +11,8 @@ class Popup
   visible = false
   onHide = null
   controls = {}
-  title = ''
+  title = null
+  buttons = null
 
   constructor:(appendElement)->
     if not appendElement?
@@ -31,13 +32,15 @@ class Popup
     @element.className = 'eb-modal-window'
     @element.innerHTML = html
     @content = @element.querySelector '.content'
+    @form = @content
     fadeTime = @fadeTime
     @element.style.transition = "opacity #{fadeTime}ms"
     @element.style.webkitTransition = "opacity #{fadeTime}ms"
     close = @element.querySelector '.close'
     close.addEventListener 'click',(ev)=>
       @hide()
-    @title = @element.querySelector '.title'
+    @title = @element.querySelector('.title')
+    @buttons = @element.querySelector '.buttons'
     #title.addEventListener 'mousedown',(ev)=>
       #@dragWindow(ev)
     appendElement.appendChild @element
@@ -100,13 +103,16 @@ class Popup
     @visible = true
     @center()
     @getControls()
-    @makeSliders()
-    @makeColors()
+    if !@inputParsed
+      @makeSliders()
+      @makeColors()
+      @inputParsed = true
 
   show:(attrs)->
     if not attrs?
       return @setVisible()
 
+    @inputParsed = false
     titleHTML = attrs.title
     contentHTML = attrs.content
     titleEl = @element.querySelector '.title'
@@ -138,15 +144,24 @@ class Popup
     if attrs?.onShow?
       attrs.onShow(@)
 
-  hide:->
+  hide:(next)->
     @element.style.opacity = 0
     @visible = false
     setTimeout =>
       @element.style.display = 'none'
       if @onHide?
         @onHide(@)
+      if next? then next()
     , @fadeTime
 
+  close:->
+    @hide =>
+      @content.innerHTML = ''
+
+  destroy:->
+    @hide =>
+      @element.remove()
+      delete @
 
   working:(value)->
     icon = @element.querySelector '#working'

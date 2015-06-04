@@ -128,7 +128,7 @@ $ = require('atom-space-pen-views').$
 
       # We are ready to go
       ratio = @valueToRatio(@value)
-      @input.trigger "slider:ready",
+      @input.trigger "slider-ready",
         value: @value
         ratio: ratio
         position: ratio * @slider.outerWidth()
@@ -348,7 +348,6 @@ $ = require('atom-space-pen-views').$
       allowedValues = $el.data "slider-values"
       settings.allowedValues = (parseFloat(x) for x in allowedValues.split(",")) if allowedValues
       settings.range = $el.data("slider-range").split(",") if $el.data("slider-range")
-      console.log 'range',settings.range
       settings.step = $el.data("slider-step") if $el.data("slider-step")
       settings.snap = $el.data("slider-snap")
       settings.equalSteps = $el.data("slider-equal-steps")

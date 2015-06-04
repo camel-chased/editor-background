@@ -21,12 +21,7 @@ class ConfigWindow
     @html = ''
     @popup = new popup()
     @cleanPackageName = @cleanName(@packageName)
-    @title = @cleanName+" settings"
-
-    @buttons = {
-      "Apply":(ev,popup)=> @applyConfig(ev,popup),
-      "Close":(ev,popup)=> @close(ev,popup)
-    }
+    @title = @cleanPackageName+" settings"
     @loadSettings()
 
   type:(object)->
@@ -40,9 +35,25 @@ class ConfigWindow
     else
       null
 
+  upper:(match)->
+    match.toUpperCase()
+
+
+  lower:(match)->
+    match.toLowerCase()
 
   cleanName:(name)->
-    name
+    dotPos = name.lastIndexOf('.')
+    if dotPos>-1
+      result = name.substr(dotPos+1,name.length-dotPos-1)
+    else
+      result = name
+    result=result
+    .replace '-',' '
+    .replace /([a-z]+)([A-Z]+)/g,"$1 $2"
+    .replace /^[a-z].(.*)/gi,@lower
+    .replace /^([a-z]{1})/gi,@upper
+    result
 
   getConfigValue:(name,obj)->
     fullPath = @packageName+@path+'.'+name
@@ -67,9 +78,24 @@ class ConfigWindow
     "
     <div class='group'>
       <label for='#{name}'>#{cleanName}</label>
-      <input type='text' name='#{name}' id='#{name}' value='#{value}'>
-      <button class='btn btn-default file-btn'>...</button>
+      <input type='text' class='file-text' name='#{name}' id='#{name}'
+        value='#{value}'><button class='btn btn-default file-btn'>...</button>
       <input type='file' id='file-#{name}' style='display:none;'>
+    </div>
+    "
+
+  parseTextChild:(name,obj)->
+    cleanName = @getChildCleanName name,obj
+    value = @getConfigValue name,obj
+    if not value? then value = ''
+    "
+    <div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
+      <textarea
+        class='file-text'
+        name='#{name}'
+        id='#{name}'
+        value='#{value}'>#{value}</textarea>
     </div>
     "
 
@@ -77,6 +103,8 @@ class ConfigWindow
     if obj.toolbox?
       if obj.toolbox == 'file'
         return @parseFileChild name,obj
+      if obj.toolbox == 'text'
+        return @parseTextChild name,obj
     cleanName = @getChildCleanName name,obj
     value = @getConfigValue name,obj
     if not value?
@@ -161,6 +189,7 @@ class ConfigWindow
     options = @parseEnumOptions  obj.enum,value
     "
     <div class='group'>
+      <label for='#{name}'>#{cleanName}</label>
       <select name='#{name}' id='#{name}'>
         #{options}
       </select>
@@ -178,7 +207,7 @@ class ConfigWindow
     </div>
     "
 
-  parseTabChild:(name,value,level)->
+  parseTabChild:(name,value,level,path)->
     parsers = {
       'string':(name,value)=>@parseStringChild name,value,
       'integer':(name,value)=>@parseIntegerChild name,value,
@@ -188,13 +217,13 @@ class ConfigWindow
       'array':(name,value)=>@parseArrayChild name,value,
       'color':(name,value)=>@parseColorChild  name,value
     }
-    console.log 'parsing child tab',name,level
+    console.log 'parsing child tab',name,level,path
     if not value.enum?
-      parsers[value.type] name,value,level+1
+      parsers[value.type] path,value,level+1
     else
-      @parseEnumChild name,value,level+1
+      @parseEnumChild path,value,level+1
 
-  makeTabs:(name,obj)->
+  makeTabs:(name,obj,level,path)->
     cleanName = @getChildCleanName name,obj
     props = obj.properties
     tabs = Object.keys(props)
@@ -203,9 +232,10 @@ class ConfigWindow
     html = "<div class='config-tabs'>"
     index = 0
     for tab in tabs
-      do (tab)->
+      do (tab)=>
         console.log 'parsing tab',tab
-        html += "<div class='tab' id='tab-index-#{index}'>#{tab}</div>"
+        tabText = @cleanName tab
+        html += "<div class='tab' id='tab-index-#{index}'>#{tabText}</div>"
     html += "</div>" # header tabs
 
     html+="<div class='config-content'>"
@@ -213,42 +243,53 @@ class ConfigWindow
       do (key,value) =>
         console.log 'parsing tab content',key
         html += "<div class='tab-content' id='content-tab-index-#{index}'>"
-        html += @parseObjectChild key,value,1
+        html += @parseObjectChild key,value,1,path+'.'+key
         html += "</div>"
     html += "</div>"
     html
 
-  parseObjectChild:(name,obj,level)->
+  parseObjectChild:(name,obj,level,path)->
     if !level? then level = 0
-    console.log 'parsing object child',name,obj,level
+    path ?= ''
+    #console.log 'parsing object child',name,obj,level
     if level > 10
       console.error 'too much levels... :/'
       throw new Error('something goes terribly wrong... I\'m going out of here')
       return
     html = ''
     if level==0
-      html += @makeTabs name,obj,0
+      html += @makeTabs name,obj,0,name
     else
       props = obj.properties
       for key,value of props
         do (key,value)=>
-          html += @parseTabChild key,value,level+1
+          html += @parseTabChild key,value,level+1,path+'.'+key
     html
 
+  addButtons:->
+    html="
+    <button id='apply-btn' class='btn btn-default popup-btn'>Apply</button>
+    <button id='close-btn' class='btn btn-default popup-btn'>Close</button>
+    "
+    @popup.buttons.innerHTML = html
+    applyBtn = @popup.element.querySelector '#apply-btn'
+    applyBtn.addEventListener 'click',(ev)=>@applyConfig(ev)
+    closeBtn = @popup.element.querySelector '#close-btn'
+    closeBtn.addEventListener 'click',(ev)=>@close(ev)
 
   loadSettings:->
     @settings = {}
     @schema = atom.config.schema.properties[@packageName]
     @config = atom.config.get(@packageName)
-    @default = atom.config.getDefault(@packageName)
+    @default = atom.config.get(@packageName)
     @path = ''
     @html = '<div id="editor-background-config">'
     @html += @parseObjectChild @packageName,@schema,0
     @html += "</div>"
 
     @popup.content.innerHTML = @html
-    @popup.title = @packageName
-    @configWnd = @popup.element.querySelector '#editor-background-config'
+    @popup.title.innerHTML = @cleanPackageName
+    @configWnd = @popup.element.querySelector '.content'
     @tabs = @configWnd.querySelectorAll '.tab'
     @tabsContent = @configWnd.querySelectorAll '.tab-content'
     for index in [0..(@tabs.length-1)]
@@ -258,23 +299,24 @@ class ConfigWindow
 
     @activateTab 0
     @bindEvents()
+    @addButtons()
 
-  getSettings:->
-    return
-    values = {}
-    console.log 'popup controls',@popup.controls
-    for name,elem of @popup.controls
-      do (name,elem)->
-        console.log 'elem',name,elem
-        if name?
-          if name!=''
-            values[name]=elem.value
-    values
+
 
   saveSettings:(settings)->
-    keys = Object.keys(settings)
-    for key in keys
-      atom.config.set('editor-background.'+key,settings[key])
+    values = {}
+    elements = @popup.content.elements
+    for elem in elements
+      do(elem)->
+        name = elem.name
+        if name!= ''
+          values[name]=elem.value
+    console.log values
+    for key,val of values
+      do (key,val)->
+        console.log 'setting up',key,val
+        atom.config.set(key,val)
+
 
   fileChooser:(ev)->
     elem = ev.target
@@ -288,19 +330,17 @@ class ConfigWindow
 
   bindEvents:->
     $(@configWnd).find('.file-btn').on 'click',(ev)=>@fileChooser(ev)
-    file = @configWnd.querySelector 'input[type="file"]' 
+    file = @configWnd.querySelector 'input[type="file"]'
     file.addEventListener 'change',(ev)=>
       @fileChanged(ev)
 
-  applyConfig:(ev,popup)->
-    settings = @getSettings()
-    console.log 'settings',settings
-    @saveSettings settings
+  applyConfig:(ev)->
+    @saveSettings()
     if @onApply?
       @onApply()
 
 
-  close:(ev,popup)->
+  close:(ev)->
     @popup.hide()
 
 
