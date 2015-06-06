@@ -79,12 +79,18 @@ class Popup
           val = range.value
           $(range).simpleSlider('setValue',val)
 
+        input = document.createElement 'input'
+        input.type = 'text'
+        input.style.minWidth='40px'
+        range.parentElement.insertBefore input,range
+        input.addEventListener 'change',->
+          range.value = input.value
         val = range.value || 0
+        input.value = val
         dataRange = range.dataset.sliderRange.split(',')
         $(range).simpleSlider({range:dataRange,value:val})
         $(range).bind 'slider:changed',(ev,data)->
-          console.log 'sliderChange',data
-
+          input.value = data.value
 
   makeColors:->
     colorPickers = @element.querySelectorAll '.color-picker'

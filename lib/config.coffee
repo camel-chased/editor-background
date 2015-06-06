@@ -56,14 +56,45 @@ class ConfigWindow
     result
 
   getConfigValue:(name,obj)->
-    fullPath = @packageName+@path+'.'+name
+    fullPath = name
     value = atom.config.get fullPath
+    schema = atom.config.getSchema fullPath
     if not value?
       if obj?.default?
         value = obj.default
       else
-        value = atom.config.getDefault fullPath
+        if schema?.default?
+          value = schema.default
     value
+
+  # get value from config with default if not present
+  get:(fullPath)->
+    result = null
+    val = atom.config.settings
+    if fullPath.indexOf('.')>-1
+      path = fullPath.split('.')
+      for p in path
+        if val?[p]?
+          val = val[p]
+        else
+          val = null
+    else 
+      val = atom.config.settings[fullPath]
+    value = val
+    schema = atom.config.getSchema fullPath
+    if !value? or (schema.type=='object' and Object.keys(value)==[])
+      value = atom.config.getDefault fullPath
+      value = atom.config.makeValueConformToSchema fullPath,value
+    if schema.type == 'object' and value?
+      keys = Object.keys(value)
+      if keys!=[]
+        result = {}
+        for key,val of value
+          do (key,val)=>
+            result[key] = @get fullPath+'.'+key
+    else
+      result = value
+    result
 
   getChildCleanName:(name,obj)->
     cleanName = @cleanName name

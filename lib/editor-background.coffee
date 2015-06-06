@@ -51,11 +51,12 @@ module.exports = EditorBackground =
         url:
           type:'string'
           toolbox:'file'
+          title:'Image URL'
           default:'atom://editor-background/bg.jpg'
           description:"URL of your image. It can be http://...
           or just /home/yourname/image.jpg"
         blurRadius:
-          type:"integer"
+          type:'integer'
           description:"Background image blur. 0 = none"
           default:0
           minimim:0
@@ -79,7 +80,7 @@ module.exports = EditorBackground =
           description:"Color used to overlay background image"
         opacity:
           type:'integer'
-          default:'100'
+          default:100
           description:"Background image visibility percent 1-100"
           minimum:0
           maximum:100
@@ -93,18 +94,24 @@ module.exports = EditorBackground =
       properties:
         color:
           type:"color"
-          default:"rgb(0,0,0)"
+          default:"rgba(0,0,0,1)"
           description:"background color for text/code"
         opacity:
           type:"integer"
           default:100
+          minimum:0
+          maximum:100
         blur:
           type:"integer"
           default:5
+          minimum:0
+          maximum:50
         expand:
           type:"integer"
           default:4
           description:"If you want larger area under text - try 4 or 10"
+          minimum:0
+          maximum:200
         shadow:
           type:"string"
           default:"none"
@@ -138,7 +145,8 @@ module.exports = EditorBackground =
           type:'integer'
           default:"35"
           description:"Tree View can be transparent too :)"
-
+          minimum:0
+          maximum:100
         transparentTabBar:
           type:"boolean"
           default:true
@@ -228,7 +236,7 @@ module.exports = EditorBackground =
     boxStyle
 
   mouseMove: (ev) ->
-    conf=atom.config.get('editor-background')
+    conf=@configWnd.get('editor-background')
     if conf.box3d.mouseFactor > 0
       @mouseX=ev.pageX
       @mouseY=ev.pageY
@@ -311,7 +319,7 @@ module.exports = EditorBackground =
     video = @elements.video
     canvas = @elements.videoCanvas
     context = canvas.getContext("2d")
-    ytid = @getYTId atom.config.get 'editor-background.video.youTubeURL'
+    ytid = @getYTId @configWnd.get 'editor-background.video.youTubeURL'
 
     html="
     <div id='editor-background-modal' style='overflow:hidden'>
@@ -484,7 +492,7 @@ module.exports = EditorBackground =
           @insertVideo.apply @,[savePath]
 
         @yt.on 'ready',=>
-          conf = atom.config.get('editor-background')
+          conf = @configWnd.get('editor-background')
           @time = {
             start:conf.video.startTime,
             end:conf.video.endTime
@@ -508,7 +516,7 @@ module.exports = EditorBackground =
   startYouTube: ->
     if @packagesLoaded
       @removeVideo()
-      conf = atom.config.get 'editor-background'
+      conf = @configWnd.get 'editor-background'
       if conf.video.youTubeURL? != ''
         @downloadYTVideo conf.video.youTubeURL
       else
@@ -561,11 +569,11 @@ module.exports = EditorBackground =
         editor = attrs.editorElement
         if editor.constructor.name == 'atom-text-editor'
 
-          conf = atom.config.get('editor-background')
+          conf = @configWnd.get('editor-background')
+          console.log 'conf',conf
           textBlur = conf.text.blur
           opacity = (conf.text.opacity/100).toFixed(2)
-          color = conf.text.color
-          console.log 'color',color
+          color = conf.text.color.toHexString()
           expand = conf.text.expand
 
           root = editor.shadowRoot
@@ -582,10 +590,11 @@ module.exports = EditorBackground =
             charWidth = displayBuffer.getDefaultCharWidth()
             tabWidth = displayBuffer.getTabLength() * charWidth
 
-          workspace = qr 'atom-text-editor'
+          editor = atom.workspace.getActiveTextEditor()
+          editor = atom.views.getView(editor)
 
-          if workspace?
-            computedStyle = window.getComputedStyle(workspace)
+          if editor?
+            computedStyle = window.getComputedStyle(editor)
 
             fontFamily = computedStyle.fontFamily
             fontSize = computedStyle.fontSize
@@ -601,6 +610,7 @@ module.exports = EditorBackground =
 
             scaleX = 1 + parseFloat((expand / 100).toFixed(2))
             scaleY = 1 + parseFloat((expand / 10).toFixed(2))
+            
 
             css = @elements.textBackgroundCss
 
@@ -739,7 +749,7 @@ module.exports = EditorBackground =
       @configWnd = new configWindow 'editor-background'
       @activateMouseMove()
 
-      conf=atom.config.get('editor-background')
+      conf=@configWnd.get('editor-background')
 
       @elements.image = document.createElement 'img'
       @elements.image.id='editor-background-image'
@@ -784,7 +794,7 @@ module.exports = EditorBackground =
       setTimeout (=>@initialize.apply @),1000
 
   updateBgPos: ->
-    conf = atom.config.get('editor-background')
+    conf = @configWnd.get('editor-background')
     body = qr 'body'
     factor = conf.box3d.mouseFactor
     polowaX = body.clientWidth // 2
@@ -796,8 +806,8 @@ module.exports = EditorBackground =
     inline @elements.bg,"background-position:#{x}px #{y}px !important;"
 
   updateBox: (depth) ->
-    conf=atom.config.get('editor-background')
-    if not depth? then depth = conf.box.depth
+    conf=@configWnd.get('editor-background')
+    if not depth? then depth = conf.box3d.depth
     depth2 = depth // 2
     background=@elements.blurredImage
     opacity=(conf.boxOpacity / 100).toFixed(2)
@@ -870,7 +880,7 @@ module.exports = EditorBackground =
 
   blurImage:->
     if @packagesLoaded
-      conf = atom.config.get('editor-background')
+      conf = @configWnd.get('editor-background')
       @elements.image.setAttribute 'src',conf.image.url
       applyBlur = false
       if conf.image.blur > 0
@@ -897,13 +907,13 @@ module.exports = EditorBackground =
 
   applyBackground: ->
     if @packagesLoaded
-      # workspaceView = atom.views.getView(atom.workspace)
+      #workspaceView = atom.views.getView(atom.workspace)
       # doesn't work :/
       workspaceView = qr 'atom-workspace'
       #console.log 'workspaceView',workspaceView
       if workspaceView?
         workspaceView.className += ' editor-background'
-      conf = atom.config.get 'editor-background'
+      conf = @configWnd.get 'editor-background'
       opacity = 100 - conf.image.opacity
       alpha=(opacity / 100).toFixed(2)
 
@@ -922,10 +932,10 @@ module.exports = EditorBackground =
         rgb = colorToArray newColor
         newColor = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha+')'
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
-
+      @elements.css.innerText+="\natom-workspace.editor-background{background:#{newColor};}"
 
       if conf.text.shadow
-        @elements.css.innerText="atom-text-editor::shadow .line{text-shadow:"+
+        @elements.css.innerText+="\natom-text-editor::shadow .line{text-shadow:"+
         conf.text.shadow+" !important;}"
 
       if conf.boxDepth>0
@@ -948,9 +958,6 @@ module.exports = EditorBackground =
       if conf.other.transparentTabBar
         inline @elements.tabBar,'background:rgba(0,0,0,0) !important;'
         inline @elements.insetPanel,'background:rgba(0,0,0,0) !important;'
-
-      inline @elements.workspace,'background:'+newColor+' !important;'
-
 
       if conf.other.treeViewOpacity > 0
         inline @elements.treeView,'background:'+newTreeRGBA+' !important;'
