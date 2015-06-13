@@ -12,6 +12,7 @@ class Animation
 
 
   constructor: (ytid) ->
+    console.log 'animation constructor'
     @loaded = 0
     @playing = false
     @speed = atom.config.get 'editor-background.video.animationSpeed'

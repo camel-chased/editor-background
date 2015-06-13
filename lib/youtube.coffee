@@ -7,7 +7,7 @@ mp4 = require './iso_boxer.js'
 class YouTube
 
 
-  INFO_URL = 'https://www.youtube.com/api_video_info?html5=1&c=WEB&cplayer=UNIPLAYER&cver=html5&el=embedded&video_id='
+  INFO_URL = 'https://www.youtube.com/api_video_info?html5=1&hl=en_US&c=WEB&cplayer=UNIPLAYER&cver=html5&el=embedded&video_id='
   VIDEO_EURL = 'https://youtube.googleapis.com/v/'
   HEADER_SIZE = 438
 
@@ -90,7 +90,9 @@ class YouTube
           temp[key] = value
 
       if temp.status!='ok'
-       #console.log 'error',temp.reason
+        console.log 'error',temp.reason
+        msg = temp.reason.toString('UTF-8').replace(/\+/gi,' ')
+        atom.notifications.addWarning msg
         return
 
       @basicStreams = @getMap temp.url_encoded_fmt_stream_map
@@ -118,7 +120,7 @@ class YouTube
             urlParams[key]=unescape(value)
           @formats[itag].urlParams = urlParams
 
-      #console.log 'formats finished',@formats
+      console.log 'formats finished',@formats
       @emitter.emit 'formats',@formats
       @emitter.emit 'ready'
       if next?

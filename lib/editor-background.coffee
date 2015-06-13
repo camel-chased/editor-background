@@ -45,6 +45,12 @@ colorToArray = (str) ->
 
 module.exports = EditorBackground =
   config:
+    useConfigWindow:
+      type:'string'
+      description:"USE PACKAGE CONFIG WINDOW INSTEAD OF THIS SETTINGS ( CTRL + SHIFT + E ) TO OPEN"
+      toolbox:'ignore'
+      default:''
+      order:0
     image:
       type:'object'
       properties:
@@ -127,7 +133,7 @@ module.exports = EditorBackground =
           'background animation' or similar on youtube and paste url here."
         animationSpeed:
           type:"integer"
-          default:100
+          default:75
           description:"animation speed in ms (original is 50),
           LOWER VALUE = HIGHER CPU USAGE"
         startTime:
@@ -414,6 +420,7 @@ module.exports = EditorBackground =
 
 
   chooseFormat:(formats,next)->
+    console.log 'choose format?'
     html = '
     <div style="font-size:1.1em;text-align:center;margin-bottom:20px;">
     Choose video format</div>
@@ -447,6 +454,7 @@ module.exports = EditorBackground =
 
 
   downloadYTVideo: (url)->
+    console.log 'download yt video?',url
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
@@ -492,16 +500,18 @@ module.exports = EditorBackground =
           @insertVideo.apply @,[savePath]
 
         @yt.on 'ready',=>
+          console.log 'get video info ready'
           conf = @configWnd.get('editor-background')
           @time = {
             start:conf.video.startTime,
             end:conf.video.endTime
           }
           @chooseFormat @yt.formats,(format)=>
+            console.log 'we chosen format',format
             @videoWidth = @yt.formats[format].width
             @videoHeight = @yt.formats[format].height
             @yt.download {filename:savePath,itag:format,time:@time}
-
+        console.log 'getting video info'
         @yt.getVideoInfo()
       else
         @initAnimation(ytid)
@@ -725,8 +735,6 @@ module.exports = EditorBackground =
 
   initialize: ->
     @elements.body = qr 'body'
-    # @elements.workspace = atom.views.getView(atom.workspace)
-    # doesn't work i dont know why
     @elements.workspace = qr 'atom-workspace'
     @elements.editor = null
     if @elements.workspace?
@@ -757,25 +765,27 @@ module.exports = EditorBackground =
 
       @elements.image = document.createElement 'img'
       @elements.image.id='editor-background-image'
-      @elements.image.setAttribute 'src',conf.imageURL
+      @elements.image.setAttribute 'src',conf.image.imageURL
 
-      @elements.blurredImage = conf.image.url
+      @elements.blurredImage = conf.image.imageUrl
 
       @insertTextBackgroundCss()
 
       if conf.box3d.mouseFactor>0 then @activateMouseMove()
-      @elements.plane = document.createElement('div')
-      @elements.plane.style.cssText = planeInitialCss
-      @elements.main.appendChild @elements.plane
+
       @appendCss()
-
-
       @watchEditors()
 
-      @elements.boxStyle = @createBox()
       @elements.bg = document.createElement 'div'
       @elements.bg.style.cssText="position:absolute;width:100%;height:100%;"
       @elements.main.appendChild @elements.bg
+
+      @elements.boxStyle = @createBox()
+
+      @elements.plane = document.createElement('div')
+      @elements.plane.style.cssText = planeInitialCss
+      @elements.main.appendChild @elements.plane
+
       @insertTextBackground()
 
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
@@ -810,15 +820,16 @@ module.exports = EditorBackground =
     inline @elements.bg,"background-position:#{x}px #{y}px !important;"
 
   updateBox: (depth) ->
+    console.log 'update box'
     conf=@configWnd.get('editor-background')
     if not depth? then depth = conf.box3d.depth
     depth2 = depth // 2
     background=@elements.blurredImage
-    opacity=(conf.boxOpacity / 100).toFixed(2)
+    opacity=(conf.box3d.shadowOpacity / 100).toFixed(2)
     range=300
     range2=range // 3
-    bgSize=conf.backgroundSize
-    if bgSize=='manual' then bgSize=conf.manualBackgroundSize
+    bgSize=conf.image.backgroundSize
+    if bgSize=='manual' then bgSize=conf.image.manualBackgroundSize
     if bgSize=='original' then bgSize='auto'
     body = qr 'body'
     factor = conf.box3d.mouseFactor
@@ -911,8 +922,6 @@ module.exports = EditorBackground =
 
   applyBackground: ->
     if @packagesLoaded
-      #workspaceView = atom.views.getView(atom.workspace)
-      # doesn't work :/
       workspaceView = qr 'atom-workspace'
       #console.log 'workspaceView',workspaceView
       if workspaceView?
@@ -942,8 +951,8 @@ module.exports = EditorBackground =
         @elements.css.innerText+="\natom-text-editor::shadow .line{text-shadow:"+
         conf.text.shadow+" !important;}"
 
-      if conf.boxDepth>0
-        @updateBox conf.box.depth
+      if conf.box3d.depth>0
+        @updateBox conf.box3d.depth
       else
         @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
@@ -957,7 +966,7 @@ module.exports = EditorBackground =
         ' !important;'
 
       if conf.image.style
-        @elements.plane.style.cssText+=conf.style
+        @elements.plane.style.cssText+=conf.image.style
 
       if conf.other.transparentTabBar
         inline @elements.tabBar,'background:rgba(0,0,0,0) !important;'

@@ -149,6 +149,8 @@ class ConfigWindow
         return @parseFileChild name,obj
       if obj.toolbox == 'text'
         return @parseTextChild name,obj
+      if obj.toolbox == 'ignore'
+        return ""
     cleanName = @getChildCleanName name,obj
     value = @getConfigValue name,obj
     if not value?
@@ -277,18 +279,20 @@ class ConfigWindow
     index = 0
     for tab in tabs
       do (tab)=>
-        #console.log 'parsing tab',tab
-        tabText = @cleanName tab
-        html += "<div class='tab' id='tab-index-#{index}'>#{tabText}</div>"
+        #console.log 'parsing tab',tab,props[tab]
+        if not props[tab].toolbox?
+          tabText = @cleanName tab
+          html += "<div class='tab' id='tab-index-#{index}'>#{tabText}</div>"
     html += "</div>" # header tabs
 
     html+="<div class='config-content'>"
     for key,value of props
       do (key,value) =>
         #console.log 'parsing tab content',key
-        html += "<div class='tab-content' id='content-tab-index-#{index}'>"
-        html += @parseObjectChild key,value,1,path+'.'+key
-        html += "</div>"
+        if !value.toolbox?
+          html += "<div class='tab-content' id='content-tab-index-#{index}'>"
+          html += @parseObjectChild key,value,1,path+'.'+key
+          html += "</div>"
     html += "</div>"
     html
 

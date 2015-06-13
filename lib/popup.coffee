@@ -106,8 +106,14 @@ class Popup
           $(cpicker).colorpicker('show')
 
   setVisible:->
+    otherModals = document.querySelectorAll '.eb-modal-window'
+    zIndex = 1
+    for modal in otherModals
+      cmpSt = window.getComputedStyle modal
+      if cmpSt.zIndex > zIndex then zIndex=cmpSt.zIndex
     @element.style.display='block'
     @element.style.opacity = 1
+    @element.style.zIndex = zIndex+1
     @visible = true
     @center()
     @getControls()
