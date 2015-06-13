@@ -765,9 +765,9 @@ module.exports = EditorBackground =
 
       @elements.image = document.createElement 'img'
       @elements.image.id='editor-background-image'
-      @elements.image.setAttribute 'src',conf.image.imageURL
+      @elements.image.setAttribute 'src',conf.image.url
 
-      @elements.blurredImage = conf.image.imageUrl
+      @elements.blurredImage = conf.image.url
 
       @insertTextBackgroundCss()
 
@@ -898,14 +898,14 @@ module.exports = EditorBackground =
       conf = @configWnd.get('editor-background')
       @elements.image.setAttribute 'src',conf.image.url
       applyBlur = false
-      if conf.image.blur > 0
+      if conf.image.blurRadius > 0
         if @elements.image?
           if @elements.image.complete
             applyBlur = true
           else
             setTimeout (=> @blurImage.apply @),1000
       if applyBlur and conf.image.url
-        imageData = blur.stackBlurImage @elements.image, conf.image.blur, false
+        imageData = blur.stackBlurImage @elements.image, conf.image.blurRadius, false
         base64Data = imageData.replace(/^data:image\/png;base64,/, "")
         filename = atom.packages.resolvePackagePath('editor-background')+
         "/blur.png"
@@ -967,6 +967,8 @@ module.exports = EditorBackground =
 
       if conf.image.style
         @elements.plane.style.cssText+=conf.image.style
+
+      @blurImage()
 
       if conf.other.transparentTabBar
         inline @elements.tabBar,'background:rgba(0,0,0,0) !important;'
