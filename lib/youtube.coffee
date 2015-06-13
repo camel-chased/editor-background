@@ -6,11 +6,11 @@ mp4 = require './iso_boxer.js'
 
 class YouTube
 
-  
+
   INFO_URL = 'https://www.youtube.com/api_video_info?html5=1&c=WEB&cplayer=UNIPLAYER&cver=html5&el=embedded&video_id='
   VIDEO_EURL = 'https://youtube.googleapis.com/v/'
   HEADER_SIZE = 438
-  
+
   ytid = ''
   videoInfo = {}
   formats = []
@@ -31,7 +31,7 @@ class YouTube
 
 
 
-  
+
   parseTime: (time) ->
    #console.log 'parseTime',time
     timeRegexp = /(?:(\d+)h)?(?:(\d+)m(?!s))?(?:(\d+)s)?(?:(\d+)(?:ms)?)?/
@@ -54,7 +54,7 @@ class YouTube
     streams = []
     for map,i in streamMap
       streamData = map.split('&')
-      for data in streamData 
+      for data in streamData
         [key,value]=data.split('=')
         if !streams[i]? then streams[i]={}
         streams[i][key]=unescape(value)
@@ -82,10 +82,10 @@ class YouTube
           old = temp[key]
           temp[key] =  []
           temp[key].push old
-        
+
         if Array.isArray temp[key]
           temp[key].push unescape(value)
-        
+
         if not temp[key]?
           temp[key] = value
 
@@ -123,7 +123,7 @@ class YouTube
       @emitter.emit 'ready'
       if next?
         next(@formats)
-      
+
 
   parseRange:(range)->
     if range?
@@ -131,7 +131,7 @@ class YouTube
       startMs = @parseTime(start)
       endMs = @parseTime(end)
       if not stratS<endS
-        console.error 'Range is invalid'
+        #console.error 'Range is invalid'
         return
       [startMs,endMs]
 
@@ -173,7 +173,7 @@ class YouTube
         if index == @chunksToDownload.length-1
           @fileStream.end body,'binary',(err)=>
             if !err? then @emitter.emit 'done',@downloadedChunks
-        else  
+        else
           @fileStream.write body,'binary',(err)=>
             if !err? then @getChunk(index+1)
     else
@@ -187,7 +187,7 @@ class YouTube
   parseTimes:(obj)->
     #console.log 'calculatingChunks',obj
     @start = 0
-    @end = @parseTime("10s")      
+    @end = @parseTime("10s")
     if obj.time?
       @start = obj.time.start = @parseTime(obj.time.start)
       @end = obj.time.end = @parseTime(obj.time.end)
@@ -234,7 +234,7 @@ class YouTube
         y++
 
     headerData = new Uint8Array( newHeaderSize )
-    
+
    #console.log 'copying all header data'
     # full header clone
     for i in [0..(newHeaderSize-1)]
@@ -248,7 +248,7 @@ class YouTube
       headerData[ i+referencesOffset ] = byte
 
     # tkhd and mvhd durations must be updated too
-    
+
     tkhd = @newHeader.fetch('tkhd')
     # tkhd
     # full box 12bytes size(4)|tkhd(4)|ver(1)|flags(3)
@@ -277,7 +277,7 @@ class YouTube
       headerData[ mdhd._offset+24+i ] = buff8[i]
 
      #console.log 'buff8[i]',buff8[i]
-    
+
    #console.log 'headerData',headerData.buffer.byteLength
     checkNewHeader = mp4.parseBuffer( headerData.buffer )
    #console.log 'checkNewHeader',checkNewHeader
@@ -285,7 +285,7 @@ class YouTube
    #console.log 'newHeaderStr',newHeaderStr.length,newHeaderStr
     @fileStream.write newHeaderStr,'binary',(err)=>
       if err?
-        console.error err
+        #console.error err
         return
       next()
 
@@ -304,7 +304,7 @@ class YouTube
       text = ''
       for i in [0..body.length]
         buff[i]=body.charCodeAt(i)
-      
+
       box = mp4.parseBuffer(buff.buffer)
 
       @newHeader = mp4.parseBuffer(buff.buffer)
@@ -345,27 +345,27 @@ class YouTube
 
   # range = 10s-20s or 1h10m0s-1h15m0s
   download:(obj)->
-    
+
     if obj.filename?
       @filename = obj.filename
     else
-      console.error 'no filename specified'
+      #console.error 'no filename specified'
       return
 
     if !obj.itag?
-      console.error 'No format specified'
+      #console.error 'No format specified'
       return
 
     @itag = obj.itag
     if !@formats[@itag]?
-      console.error 'Wrong format specified'
+      #console.error 'Wrong format specified'
       return
 
     @parseTimes(obj)
     @getHeader =>
       @getChunks()
-     
-      
+
+
 
 
 

@@ -44,6 +44,8 @@ class Popup
     #title.addEventListener 'mousedown',(ev)=>
       #@dragWindow(ev)
     appendElement.appendChild @element
+    @element.addEventListener 'keydown',(ev)->
+      ev.stopPropagation()
     @
 
   destroy:->
@@ -89,7 +91,7 @@ class Popup
         input.value = val
         dataRange = range.dataset.sliderRange.split(',')
         $(range).simpleSlider({range:dataRange,value:val})
-        $(range).bind 'slider:changed',(ev,data)->
+        $(range).bind 'sliderchanged',(ev,data)->
           input.value = data.value
 
   makeColors:->
@@ -98,7 +100,7 @@ class Popup
       do (picker) ->
         $(picker).wrap('<div class="picker-wrapper"></div>')
         wrapper = $(picker).parent()
-        console.log 'wrapper',wrapper
+        #console.log 'wrapper',wrapper
         cpicker = new colorpicker(picker,{container:wrapper,format:'hex'})
         $(cpicker).focus ->
           $(cpicker).colorpicker('show')

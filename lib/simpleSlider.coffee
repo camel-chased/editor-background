@@ -315,7 +315,7 @@ $ = require('atom-space-pen-views').$
       @input
         .val(value)
         .trigger($.Event("change", eventData))
-        .trigger("slider:changed", eventData)
+        .trigger("sliderchanged", eventData)
 
 
   #

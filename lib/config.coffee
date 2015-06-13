@@ -261,7 +261,7 @@ class ConfigWindow
       'array':(name,value)=>@parseArrayChild name,value,
       'color':(name,value)=>@parseColorChild  name,value
     }
-    console.log 'parsing child tab',name,level,path
+    #console.log 'parsing child tab',name,level,path
     if not value.enum?
       parsers[value.type] path,value,level+1
     else
@@ -271,13 +271,13 @@ class ConfigWindow
     cleanName = @getChildCleanName name,obj
     props = obj.properties
     tabs = Object.keys(props)
-    console.log 'tabs',tabs
+    #console.log 'tabs',tabs
     level = 0
     html = "<div class='config-tabs'>"
     index = 0
     for tab in tabs
       do (tab)=>
-        console.log 'parsing tab',tab
+        #console.log 'parsing tab',tab
         tabText = @cleanName tab
         html += "<div class='tab' id='tab-index-#{index}'>#{tabText}</div>"
     html += "</div>" # header tabs
@@ -285,7 +285,7 @@ class ConfigWindow
     html+="<div class='config-content'>"
     for key,value of props
       do (key,value) =>
-        console.log 'parsing tab content',key
+        #console.log 'parsing tab content',key
         html += "<div class='tab-content' id='content-tab-index-#{index}'>"
         html += @parseObjectChild key,value,1,path+'.'+key
         html += "</div>"
@@ -355,10 +355,9 @@ class ConfigWindow
         name = elem.name
         if name!= ''
           values[name]=elem.value
-    console.log values
+    #console.log values
     for key,val of values
       do (key,val)->
-        console.log 'setting up',key,val
         atom.config.set(key,val)
 
 

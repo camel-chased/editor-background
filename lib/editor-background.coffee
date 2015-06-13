@@ -347,14 +347,14 @@ module.exports = EditorBackground =
     try
       fs.mkdirSync imagesFolder,0o777
     catch error
-      console.log error
+      #console.log error
     i = 0
     for frame in @frames
       base64 = frame.replace(/^data:image\/jpeg;base64,/, "")
       try
         fs.writeFileSync imagesFolder+i+'.jpg',base64,'base64'
       catch
-        console.log error
+        #console.log error
       i++
     @elements.videoCanvas.remove()
     @elements.video.remove()
@@ -441,7 +441,7 @@ module.exports = EditorBackground =
       content:html,
       title:"Editor Background - Video format"
     }
-
+    #console.log 'show popup?'
     @popup.show args
 
 
@@ -459,7 +459,7 @@ module.exports = EditorBackground =
         downloaded = fs.statSync(savePath)
         alreadyExists = downloaded.isFile()
       catch error
-        console.log error
+        #console.log error
 
       try
         dirExists = fs.statSync @elements.videoPath
@@ -469,7 +469,7 @@ module.exports = EditorBackground =
         else
           fs.mkdirSync @elements.videoPath,0o777
       catch e
-        console.log e.stack
+        #console.log e.stack
 
       if not alreadyExists
         @yt = new yt(url)
@@ -570,7 +570,7 @@ module.exports = EditorBackground =
         if editor.constructor.name == 'atom-text-editor'
 
           conf = @configWnd.get('editor-background')
-          console.log 'conf',conf
+          #console.log 'conf',conf
           textBlur = conf.text.blur
           opacity = (conf.text.opacity/100).toFixed(2)
           color = conf.text.color.toHexString()
@@ -610,7 +610,7 @@ module.exports = EditorBackground =
 
             scaleX = 1 + parseFloat((expand / 100).toFixed(2))
             scaleY = 1 + parseFloat((expand / 10).toFixed(2))
-            
+
 
             css = @elements.textBackgroundCss
 
