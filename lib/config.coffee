@@ -65,36 +65,49 @@ class ConfigWindow
       else
         if schema?.default?
           value = schema.default
+          value = atom.config.makeValueConformToSchema fullPath,value
     value
+
+
+  # prepare modified schema with value inside for easy parsing to atoms.config
+  schemaToInternalConfig:(fullPath)->
+    result = {}
+    schema = atom.config.getSchema fullPath
+    type = schema.type
+    if type == 'object'
+      props = schema.properties
+      for key,val of props
+        do(key,val)=>
+          result[key] = @schemaToInternalConfig fullPath+'.'+key
+    else
+      for key,val of schema
+        do(key,val)->
+          result[key]=val
+      # first make value default
+      result.value = atom.config.makeValueConformToSchema fullPath,schema.default
+      # but if value exists in settings ...
+      config = atom.config.get fullPath
+      if config?
+        result.value = config
+    result
+
 
   # get value from config with default if not present
   get:(fullPath)->
-    result = null
-    val = atom.config.settings
-    if fullPath.indexOf('.')>-1
-      path = fullPath.split('.')
-      for p in path
-        if val?[p]?
-          val = val[p]
-        else
-          val = null
-    else 
-      val = atom.config.settings[fullPath]
-    value = val
-    schema = atom.config.getSchema fullPath
-    if !value? or (schema.type=='object' and Object.keys(value)==[])
-      value = atom.config.getDefault fullPath
-      value = atom.config.makeValueConformToSchema fullPath,value
-    if schema.type == 'object' and value?
-      keys = Object.keys(value)
-      if keys!=[]
-        result = {}
-        for key,val of value
-          do (key,val)=>
+    internalConfig = @schemaToInternalConfig fullPath
+    result = {}
+    # we must convert our internal config to atoms.config
+    if internalConfig?
+      # if type is not present then it is object with children
+      keys = Object.keys(internalConfig)
+      if not internalConfig.type? and keys != []
+        for key in keys
+          do (key)=>
             result[key] = @get fullPath+'.'+key
-    else
-      result = value
+      else
+        result = internalConfig.value
     result
+
 
   getChildCleanName:(name,obj)->
     cleanName = @cleanName name
@@ -230,7 +243,7 @@ class ConfigWindow
   parseColorChild:(name,obj)->
     cleanName = @getChildCleanName name,obj
     value = @getConfigValue name,obj
-    #value = value.toHexString()
+    value = value.toHexString()
     "
     <div class='group'>
       <label for='#{name}'>#{cleanName}</label>
@@ -367,8 +380,8 @@ class ConfigWindow
 
   applyConfig:(ev)->
     @saveSettings()
-    if @onApply?
-      @onApply()
+    if @onChange?
+      @onChange()
 
 
   close:(ev)->

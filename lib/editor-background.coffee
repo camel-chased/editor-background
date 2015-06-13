@@ -746,7 +746,11 @@ module.exports = EditorBackground =
 
       @insertMain()
       @popup = new popup()
-      @configWnd = new configWindow 'editor-background'
+      confOptions = {
+        onChange:()=>
+          @drawBackground()
+      }
+      @configWnd = new configWindow 'editor-background',confOptions
       @activateMouseMove()
 
       conf=@configWnd.get('editor-background')
