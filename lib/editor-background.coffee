@@ -271,6 +271,9 @@ module.exports = EditorBackground =
         background:black;
         color:white;
       }
+      atom-pane-container atom-pane .item-views{
+        background:transparent !important;
+      }
     "
     @elements.textBackgroundCss=txtBgCss
     @elements.main.appendChild txtBgCss
@@ -951,6 +954,8 @@ module.exports = EditorBackground =
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
       @elements.css.innerText+="\natom-workspace.editor-background{background:#{newColor};}"
 
+      #@elements.css.innerText+="\natom-pane-container atom-pane .item-views{background:transparent !important;}"
+
       if conf.text.shadow
         @elements.css.innerText+="\natom-text-editor::shadow .line{text-shadow:"+
         conf.text.shadow+" !important;}"
@@ -960,8 +965,9 @@ module.exports = EditorBackground =
       else
         @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
-      if conf.image.size!='original'
-        inline @elements.bg, 'background-size:'+conf.image.size+
+      console.log 'conf.image.size',conf.image.backgroundSize
+      if conf.image.backgroundSize!='original'
+        inline @elements.bg, 'background-size:'+conf.image.backgroundSize+
         ' !important;'
       else
         inline @elements.bg, 'background-size:auto !important'
