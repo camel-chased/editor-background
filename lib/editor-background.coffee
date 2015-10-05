@@ -5,6 +5,7 @@ animation = require './animation'
 yt = require './youtube'
 popup = require './popup'
 configWindow = require './config'
+path = require 'path'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -793,10 +794,8 @@ module.exports = EditorBackground =
       @packagesLoaded = true
 
       @blurImage()
-      @elements.videoPath=atom.packages.resolvePackagePath('editor-background')+
-        '/youtube-videos/'
-      @elements.libPath=atom.packages.resolvePackagePath('editor-background')+
-      '/lib/'
+      @elements.videoPath=@pluginPath()+'/youtube-videos/'
+      @elements.libPath=@pluginPath()+'/lib/'
       @elements.videoExt = '.mp4'
       @elements.videoFormat = 'mp4'
       try
@@ -820,7 +819,6 @@ module.exports = EditorBackground =
     inline @elements.bg,"background-position:#{x}px #{y}px !important;"
 
   updateBox: (depth) ->
-    console.log 'update box'
     conf=@configWnd.get('editor-background')
     if not depth? then depth = conf.box3d.depth
     depth2 = depth // 2
@@ -893,6 +891,12 @@ module.exports = EditorBackground =
     if depth==0
       @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
+  pluginPath:->
+    _path = atom.packages.resolvePackagePath('editor-background')
+    if !_path
+      _path = path.resolve(__dirname)
+    return _path
+
   blurImage:->
     if @packagesLoaded
       conf = @configWnd.get('editor-background')
@@ -907,9 +911,9 @@ module.exports = EditorBackground =
       if applyBlur and conf.image.url
         imageData = blur.stackBlurImage @elements.image, conf.image.blurRadius, false
         base64Data = imageData.replace(/^data:image\/png;base64,/, "")
-        filename = atom.packages.resolvePackagePath('editor-background')+
-        "/blur.png"
+        filename = @pluginPath()+"/blur.png"
         filename = filename.replace /\\/gi,'/'
+
         fs.writeFileSync filename, base64Data,{mode:0o777,encoding:'base64'}
         imageData=filename+"?timestamp="+Date.now()
       else
@@ -986,7 +990,10 @@ module.exports = EditorBackground =
 
   # show config window
   toggle:->
-    if not @configWnd.visible
-      @configWnd.show()
+    if not @configWnd
+      alert 'Editor-background is only available after you open some files.'
     else
-      @popup.hide()
+      if not @configWnd.visible
+        @configWnd.show()
+      else
+        @popup.hide()

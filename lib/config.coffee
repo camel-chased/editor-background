@@ -372,7 +372,7 @@ class ConfigWindow
   fileChanged:(ev)->
     if ev.target.files[0]?
       file = ev.target.files[0]
-      path = file.path
+      path = file.path.replace(/\\/gi,'/')
       $(ev.target).parent().children('input[type="text"]').val(path)
 
   bindEvents:->
