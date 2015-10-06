@@ -1,4 +1,5 @@
 fs = require 'fs'
+path = require 'path'
 
 class Animation
 
@@ -19,6 +20,8 @@ class Animation
     atom.config.observe 'editor-background.video.animationSpeed',(speed)=>
       @setSpeed(speed)
     @homeDir = atom.packages.resolvePackagePath('editor-background')
+    if !@homeDir
+      @homeDir = path.resolve(__dirname)
     @videoDir = @homeDir + '/youtube-videos'
     if ytid?
       @ytid = ytid
