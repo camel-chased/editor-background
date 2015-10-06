@@ -8,14 +8,14 @@ while working.
 If you are bored or lazy find something energizing.
 If you are to much "energized" find something calming like 'background nature loop' on youtube.
 
-IMPORTANT
+IMPORTANT  
 some of themes/plugins may not work properly because all of plugins/themes
-uses same resources of dom tree
-there is no standard way to create custom plugins/themes, so different plugins
-or themes may not work correctly with editor-background
-if your editor behavior is weird, disable some plugins and reopen/reload atom
-there is only one dom tree in atom and every plugin/theme wants to change it
-so there will be situations that some plugins/themes will be in conflict
+uses same resources of dom tree.  
+There is no standard way to create custom plugins/themes, so different plugins
+or themes may not work correctly with editor-background.  
+If your editor behavior is weird, disable some plugins and reopen/reload atom.  
+There is only one dom tree in atom and every plugin/theme wants to change it.
+So there will be situations that some plugins/themes will be in conflict.
 
 
 
