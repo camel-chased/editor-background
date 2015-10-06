@@ -37,8 +37,8 @@ Features:
 * theme independent
 
 ![background](http://download.menedzer.net.pl/lion.jpg)
-![background](http://download.menedzer.net.pl/trees.jpg)
 ![background](http://download.menedzer.net.pl/plaza.jpg)
+![background](http://download.menedzer.net.pl/trees.jpg)
 ![background](http://download.menedzer.net.pl/customm.jpg)
 ![background](http://download.menedzer.net.pl/bg1.jpg)
 ![background](http://download.menedzer.net.pl/blackops.png)
