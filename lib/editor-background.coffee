@@ -220,7 +220,7 @@ module.exports = EditorBackground =
     @elements.css = cssstyle
 
   createBox: (depth) ->
-    body = qr 'body'
+    body = @elements.body
     jest = qr 'body .eb-box-wrapper'
     if not jest? or jest.length==0
       left = document.createElement 'div'
@@ -258,7 +258,7 @@ module.exports = EditorBackground =
 
 
   activateMouseMove: ->
-    body = document.querySelector 'body'
+    body = @elements.body
     body.addEventListener 'mousemove',(ev) =>  @mouseMove.apply @,[ev]
 
   insertMain:->
@@ -817,7 +817,7 @@ module.exports = EditorBackground =
 
   updateBgPos: ->
     conf = @configWnd.get('editor-background')
-    body = qr 'body'
+    body = @elements.body
     factor = conf.box3d.mouseFactor
     polowaX = body.clientWidth // 2
     polowaY = body.clientHeight // 2
@@ -838,7 +838,7 @@ module.exports = EditorBackground =
     bgSize=conf.image.backgroundSize
     if bgSize=='manual' then bgSize=conf.image.manualBackgroundSize
     if bgSize=='original' then bgSize='auto'
-    body = qr 'body'
+    body = @elements.body
     factor = conf.box3d.mouseFactor
     polowaX = body.clientWidth // 2
     polowaY = body.clientHeight // 2
@@ -935,7 +935,7 @@ module.exports = EditorBackground =
 
   applyBackground: ->
     if @packagesLoaded
-      workspaceView = qr 'atom-workspace'
+      workspaceView = @elements.workspace
       #console.log 'workspaceView',workspaceView
       if workspaceView?
         workspaceView.className += ' editor-background'
