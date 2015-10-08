@@ -583,7 +583,6 @@ module.exports = EditorBackground =
     @elements.textBackground.appendChild line
 
   drawLines: (attrs) ->
-    console.log attrs
     if attrs?
       if attrs.editorElement? && attrs.screenLines?
         @elements.textBackground.innerText = ''
