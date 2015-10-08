@@ -583,6 +583,7 @@ module.exports = EditorBackground =
     @elements.textBackground.appendChild line
 
   drawLines: (attrs) ->
+    console.log attrs
     if attrs?
       if attrs.editorElement? && attrs.screenLines?
         @elements.textBackground.innerText = ''
@@ -670,6 +671,7 @@ module.exports = EditorBackground =
             transform:translate3d(0,0,0);
             -webkit-filter:blur(#{textBlur}px);
             "
+
             attrsForward = {
               charWidth:charWidth
               scrollLeft:attrs.scrollLeft
@@ -703,7 +705,9 @@ module.exports = EditorBackground =
       displayBuffer = activeEditor.displayBuffer
       if displayBuffer?
         actualLines = displayBuffer.getVisibleRowRange()
-        screenLines = displayBuffer.buildScreenLines actualLines[0],actualLines[1]
+        tokenizedLines = displayBuffer.getTokenizedLines()
+        screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
+
         scrollTop = displayBuffer.getScrollTop()
         scrollLeft = displayBuffer.getScrollLeft()
         lineHeight = displayBuffer.getLineHeightInPixels()
@@ -718,7 +722,7 @@ module.exports = EditorBackground =
                 activeEditor:activeEditor
                 lineHeight:lineHeight
                 displayBuffer:displayBuffer
-                screenLines:screenLines.screenLines
+                screenLines:screenLines
                 offsetTop:offsetTop
                 scrollTop:scrollTop
                 scrollLeft:scrollLeft
