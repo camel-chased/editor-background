@@ -485,7 +485,7 @@ module.exports = EditorBackground =
 
 
   downloadYTVideo: (url)->
-    console.log 'download yt video?',url
+    #console.log 'download yt video?',url
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
@@ -1013,7 +1013,7 @@ module.exports = EditorBackground =
       else
         @elements.boxStyle.innerText=".eb-box-wrapper{display:none;}"
 
-      console.log 'conf.image.size',conf.image.backgroundSize
+      #console.log 'conf.image.size',conf.image.backgroundSize
       if conf.image.backgroundSize!='original'
         inline @elements.bg, 'background-size:'+conf.image.backgroundSize+
         ' !important;'

@@ -362,7 +362,7 @@ class ConfigWindow
             values[name]=elem.checked
           else
               values[name]=elem.value
-    console.log values
+    #console.log values
     for key,val of values
       do (key,val)->
         atom.config.set(key,val)
