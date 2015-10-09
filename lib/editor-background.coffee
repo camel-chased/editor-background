@@ -273,6 +273,9 @@ module.exports = EditorBackground =
     @elements.main=main
     document.querySelector '#editor-background-main'.remove
     @elements.body.insertBefore main,@elements.body.firstChild
+    @elements.itemViews = document.querySelectorAll '.item-views'
+    for el in @elements.itemViews
+        el.style.cssText="background:transparent !important";
 
   insertTextBackgroundCss:->
     # CSS for background text
