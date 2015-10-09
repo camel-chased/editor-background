@@ -196,26 +196,27 @@ module.exports = EditorBackground =
 
 
   activate: (state) ->
-    ###
-    theme = atom.themes.getActiveThemeNames()
-    if theme.indexOf( 'atom-dark-ui' ) == -1 && theme.indexOf( 'one-dark-ui' ) == -1
-        atom.notifications.add 'warning','Only standard themes [atom-dark-ui , one-dark-ui] are supported in editor background'
-    ###
     if ! shadowDomEnabled
       if ! shadowDomAlert
         atom.notifications.add 'warning','Use Shadow DOM option must be
         enabled to run editor-background'
       return
-
-    atom.commands.add 'atom-workspace',
+    @subs = new CompositeDisposable
+    @subs.add atom.commands.add 'atom-workspace',
       'editor-background:toggle': => @toggle()
-    atom.config.observe 'editor-background',
+    @subs.add atom.config.observe 'editor-background',
      (conf) => @applyBackground.apply @,[conf]
-    atom.config.observe 'editor-background.image.url',(url)=>
+    @subs.add atom.config.observe 'editor-background.image.url',(url)=>
       @blurImage.apply @,[url]
-    atom.config.observe 'editor-background.video.youTubeURL',(url) =>
+    @subs.add atom.config.observe 'editor-background.video.youTubeURL',(url) =>
       @startYouTube.apply @,[url]
     @initialize()
+
+  deactivate: ()->
+    if @subs?
+        @subs.dispose()
+    if @elements?.main?
+        @elements.main.remove()
 
   appendCss: () ->
     css = ""
@@ -742,20 +743,20 @@ module.exports = EditorBackground =
             @drawLines attrs
 
   watchEditor:(editor)->
-    editor.onDidChangeScrollTop (scroll)=>
+    @subs.add editor.onDidChangeScrollTop (scroll)=>
       @drawBackground.apply @,[{scrollTop:scroll},editor]
-    editor.onDidChangeScrollLeft (scroll)=>
+    @subs.add editor.onDidChangeScrollLeft (scroll)=>
       @drawBackground.apply @,[{scrolLeft:scroll},editor]
-    editor.onDidChange (change)=>
+    @subs.add editor.onDidChange (change)=>
       @drawBackground.apply @,[{change:change},editor]
 
 
   watchEditors: ->
-    atom.workspace.observeTextEditors (editor)=>
+    @subs.add atom.workspace.observeTextEditors (editor) =>
       @watchEditor.apply @,[editor]
-    atom.workspace.observeActivePaneItem (editor)=>
+    @subs.add atom.workspace.observeActivePaneItem (editor)=>
       @drawBackground.apply @,[{active:editor},editor]
-    atom.workspace.onDidDestroyPaneItem (pane)=>
+    @subs.add atom.workspace.onDidDestroyPaneItem (pane)=>
       @drawBackground.apply @,[{destroy:pane}]
 
   initialize: ->
