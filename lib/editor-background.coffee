@@ -183,6 +183,7 @@ module.exports = EditorBackground =
 
 
 
+
   packagesLoaded:false
   initialized:false
   elements: {}
@@ -195,6 +196,11 @@ module.exports = EditorBackground =
 
 
   activate: (state) ->
+    ###
+    theme = atom.themes.getActiveThemeNames()
+    if theme.indexOf( 'atom-dark-ui' ) == -1 && theme.indexOf( 'one-dark-ui' ) == -1
+        atom.notifications.add 'warning','Only standard themes [atom-dark-ui , one-dark-ui] are supported in editor background'
+    ###
     if ! shadowDomEnabled
       if ! shadowDomAlert
         atom.notifications.add 'warning','Use Shadow DOM option must be
@@ -279,6 +285,7 @@ module.exports = EditorBackground =
       }
       atom-pane-container atom-pane .item-views{
         background:transparent !important;
+        background-color:transparent !important;
       }
     "
     @elements.textBackgroundCss=txtBgCss
@@ -700,6 +707,8 @@ module.exports = EditorBackground =
       return
     @activeEditor = atom.workspace.getActiveTextEditor()
     activeEditor = @activeEditor
+    if !activeEditor?.displayBuffer?
+        @removeBgLines()
     if activeEditor?.displayBuffer?
       displayBuffer = activeEditor.displayBuffer
       if displayBuffer?
