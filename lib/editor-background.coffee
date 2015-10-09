@@ -77,6 +77,15 @@ module.exports = EditorBackground =
           type:"string"
           default:""
           description:"'100px 100px' or '50%' try something..."
+        backgroundPosition:
+          type:"string"
+          default:"center"
+          description:"Background position"
+        repeat:
+          type:"string"
+          default:"no-repeat"
+          enum:["no-repeat","repeat","repeat-x","repeat-y"]
+          description:"Background repeat"
         customOverlayColor:
           type:"boolean"
           default:false
@@ -282,6 +291,7 @@ module.exports = EditorBackground =
     # CSS for background text
     txtBgCss = document.createElement 'style'
     txtBgCss.type="text/css"
+    bgColor =
     txtBgCss.cssText="
       .editor-background-line{
         background:black;
@@ -849,6 +859,7 @@ module.exports = EditorBackground =
     depth2 = depth // 2
     background=@elements.blurredImage
     opacity=(conf.box3d.shadowOpacity / 100).toFixed(2)
+    imgOpacity = conf.image.opacity / 100
     range=300
     range2=range // 3
     bgSize=conf.image.backgroundSize
@@ -862,6 +873,9 @@ module.exports = EditorBackground =
     offsetY =  @mouseY - polowaY
     x = polowaX + (offsetX // factor)
     y = polowaY + (offsetY // factor)
+    inline @elements.bg,"opacity:0;"
+    position = conf.image.backgroundPosition
+    repeat = conf.image.repeat
     boxCss="
     .eb-box-wrapper{
       perspective:1000px;
@@ -872,6 +886,7 @@ module.exports = EditorBackground =
       left:0;
       width:100%;
       height:100%;
+      opacity:#{imgOpacity};
     }
     .eb-left,.eb-top,.eb-right,.eb-bottom,.eb-back{
       position:fixed;
@@ -881,6 +896,8 @@ module.exports = EditorBackground =
       background-image:url('#{background}');
       background-size:#{bgSize};
       backface-visibility: hidden;
+      background-position:#{position};
+      background-repeat:#{repeat};
     }
     .eb-left,.eb-right{
       width:#{depth}px;
@@ -947,14 +964,21 @@ module.exports = EditorBackground =
       if conf.box3d.depth > 0
         @updateBox()
       else
-        inline @elements.bg,"background-image: url('#{imageData}') !important"
+        opacity = conf.image.opacity / 100
+        position = conf.image.backgroundPosition
+        repeat = conf.image.repeat
+        inline @elements.bg,"background-image: url('#{imageData}') !important;"
+        inline @elements.bg,"opacity:#{opacity};"
+        inline @elements.bg,"background-position:#{position};"
+        inline @elements.bg,"background-repeat:#{repeat};"
 
   applyBackground: ->
     if @packagesLoaded
       workspaceView = @elements.workspace
       #console.log 'workspaceView',workspaceView
       if workspaceView?
-        workspaceView.className += ' editor-background'
+        if workspaceView.className.indexOf('editor-background') == -1
+            workspaceView.className += ' editor-background'
       conf = @configWnd.get 'editor-background'
       opacity = 100 - conf.image.opacity
       alpha=(opacity / 100).toFixed(2)
@@ -970,11 +994,13 @@ module.exports = EditorBackground =
         'rgba('+treeRGB[0]+','+treeRGB[1]+','+treeRGB[2]+','+treeAlpha+')'
 
       if conf.image.customOverlayColor
-        newColor = conf.image.overlayColor.toRGBAString()
-        rgb = colorToArray newColor
+        _newColor = conf.image.overlayColor.toRGBAString()
+        rgb = colorToArray _newColor
         newColor = 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+alpha+')'
         newTreeRGBA='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+treeAlpha+')'
-      @elements.css.innerText+="\natom-workspace.editor-background{background:#{newColor};}"
+      else
+        _newColor = @colors.workspaceBgColor
+      @elements.css.innerText+="body{background:#{_newColor} !important;}"
 
       #@elements.css.innerText+="\natom-pane-container atom-pane .item-views{background:transparent !important;}"
 
@@ -993,7 +1019,7 @@ module.exports = EditorBackground =
         ' !important;'
       else
         inline @elements.bg, 'background-size:auto !important'
-      if conf.image.manualBackgroundSize
+      if conf.image.backgroundSize == 'manual'
         inline @elements.bg, 'background-size:'+conf.image.manualBackgroundSize+
         ' !important;'
 

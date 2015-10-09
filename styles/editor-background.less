@@ -6,6 +6,7 @@
 @text-min-width:300px;
 body{
   z-index:0;
+  background: @app-background-color;
 }
 .editor-background {
   &atom-workspace{
@@ -471,4 +472,8 @@ body{
 atom-pane-container atom-pane .item-views{
   background:transparent !important;
   background-color:transparent !important;
+}
+
+atom-workspace.editor-background{
+    background:transparent !important;
 }
