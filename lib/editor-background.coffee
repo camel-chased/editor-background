@@ -146,6 +146,12 @@ module.exports = EditorBackground =
           default:75
           description:"animation speed in ms (original is 50),
           LOWER VALUE = HIGHER CPU USAGE"
+        opacity:
+          type:"integer"
+          default:75
+          minimum:0
+          maximum:100
+          description:"video opacity"
         startTime:
           type:"string"
           default:'0s'
@@ -1037,6 +1043,10 @@ module.exports = EditorBackground =
         inline @elements.left,'background:transparent !important;'
         inline @elements.resizer,'background:transparent !important;'
         inline @elements.leftPanel,'background:transparent !important;'
+
+      videoOpacity = (conf.video.opacity/100).toFixed(2)
+      if @animation?.canvas?
+          inline @animation.canvas,"opacity:#{videoOpacity};";
 
 
 
