@@ -10,15 +10,19 @@ class Animation
   frames:[]
   currentFrame:0
   fadeOut:50
+  canvas:undefined
 
 
   constructor: (ytid) ->
-    console.log 'animation constructor'
     @loaded = 0
     @playing = false
     @speed = atom.config.get 'editor-background.video.animationSpeed'
     atom.config.observe 'editor-background.video.animationSpeed',(speed)=>
       @setSpeed(speed)
+    atom.config.observe 'editor-background.video.opacity',(opacity)=>
+        vOpacity = (opacity/100).toFixed(2)
+        if @canvas?.style?
+            @canvas.style.opacity = vOpacity
     @homeDir = atom.packages.resolvePackagePath('editor-background')
     if !@homeDir
       @homeDir = path.resolve(__dirname)
@@ -115,6 +119,8 @@ class Animation
     bdW = /([0-9]+)/gi.exec(bdW_)[1]
     ratio = (bdW / width).toFixed(2)
     @canvas.className = 'editor-background-animation'
+    _vOpacity = atom.config.get 'editor-background.video.opacity'
+    vOpacity = (_vOpacity / 100).toFixed(2)
     @canvas.style.cssText = "
     position:absolute;
     left:calc(50% - #{width2}px);
@@ -122,6 +128,7 @@ class Animation
     width:#{width}px;
     height:#{height}px;
     transform:scale(#{ratio}) translate3d(0,0,0);
+    opacity:#{vOpacity};
     "
     atom.config.observe 'editor-background.image.blur',(radius)=>
       @canvas.style.webkitFilter="blur(#{radius}px)"

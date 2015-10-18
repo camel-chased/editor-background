@@ -425,6 +425,8 @@ module.exports = EditorBackground =
     videoCanvas.width = videoWidth
     videoCanvas.height = videoHeight
     videoCanvas.id = "editor-background-videoCanvas"
+    conf = @configWnd.get 'editor-background'
+    videoOpacity = (conf.video.opacity/100).toFixed(2)
     videoCanvas.style.cssText = "
     position:absolute;
     top:0px;
@@ -432,6 +434,7 @@ module.exports = EditorBackground =
     display:none;
     width:#{videoWidth}px;
     height:#{videoHeight}px;
+    opacity:#{videoOpacity};
     "
     @elements.videoCanvas = videoCanvas
     @elements.main.insertBefore videoCanvas,@elements.textBackground
@@ -574,9 +577,13 @@ module.exports = EditorBackground =
 
   initAnimation:(ytid)->
     #console.log 'initializing Animation...'
+    atom.notifications.add 'notice','starting animation...'
     @animation = new animation(ytid)
     @animation.start @elements.main,@elements.textBackground
-
+    conf = @configWnd.get 'editor-background'
+    videoOpacity = (conf.video.opacity/100).toFixed(2)
+    if @animation?.canvas?
+        inline @animation.canvas,"opacity:#{videoOpacity};"
 
 
   getOffset: (element, offset) ->
@@ -834,6 +841,10 @@ module.exports = EditorBackground =
       @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       @packagesLoaded = true
 
+      videoOpacity = (conf.video.opacity/100).toFixed(2)
+      if @animation?.canvas?
+          inline @animation.canvas,"opacity:#{videoOpacity};";
+
       @blurImage()
       @elements.videoPath=@pluginPath()+'/youtube-videos/'
       @elements.libPath=@pluginPath()+'/lib/'
@@ -1044,9 +1055,6 @@ module.exports = EditorBackground =
         inline @elements.resizer,'background:transparent !important;'
         inline @elements.leftPanel,'background:transparent !important;'
 
-      videoOpacity = (conf.video.opacity/100).toFixed(2)
-      if @animation?.canvas?
-          inline @animation.canvas,"opacity:#{videoOpacity};";
 
 
 
