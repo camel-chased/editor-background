@@ -100,46 +100,50 @@ class Animation
   animate:->
     if @playing
       @drawFrame()
-      setTimeout =>
+      @player = setTimeout =>
         @animate()
       , @speed
 
 
   createCanvas:->
-    @canvas = document.createElement 'canvas'
-    width = @frames[0].naturalWidth
-    height = @frames[0].naturalHeight
-    #console.log 'frames',@frames.length
-    @canvas.width = width
-    @canvas.height = height
-    width2 = width // 2
-    height2 = height // 2
-    body = document.querySelector 'body'
-    bdW_ = window.getComputedStyle(body).width
-    bdW = /([0-9]+)/gi.exec(bdW_)[1]
-    ratio = (bdW / width).toFixed(2)
-    @canvas.className = 'editor-background-animation'
-    _vOpacity = atom.config.get 'editor-background.video.opacity'
-    vOpacity = (_vOpacity / 100).toFixed(2)
-    @canvas.style.cssText = "
-    position:absolute;
-    left:calc(50% - #{width2}px);
-    top:calc(50% - #{height2}px);
-    width:#{width}px;
-    height:#{height}px;
-    transform:scale(#{ratio}) translate3d(0,0,0);
-    opacity:#{vOpacity};
-    "
-    atom.config.observe 'editor-background.image.blur',(radius)=>
-      @canvas.style.webkitFilter="blur(#{radius}px)"
-    @ctx = @canvas.getContext '2d'
-    if @before?
-      @element.insertBefore @canvas,@before
-    else
-      @element.appendChild @canvas
+    if !@canvas?
+        @canvas = document.createElement 'canvas'
+        width = @frames[0].naturalWidth
+        height = @frames[0].naturalHeight
+        #console.log 'frames',@frames.length
+        @canvas.width = width
+        @canvas.height = height
+        width2 = width // 2
+        height2 = height // 2
+        body = document.querySelector 'body'
+        bdW_ = window.getComputedStyle(body).width
+        bdW = /([0-9]+)/gi.exec(bdW_)[1]
+        ratio = (bdW / width).toFixed(2)
+        @canvas.className = 'editor-background-animation'
+        _vOpacity = atom.config.get 'editor-background.video.opacity'
+        vOpacity = (_vOpacity / 100).toFixed(2)
+        @canvas.style.cssText = "
+        position:absolute;
+        left:calc(50% - #{width2}px);
+        top:calc(50% - #{height2}px);
+        width:#{width}px;
+        height:#{height}px;
+        transform:scale(#{ratio}) translate3d(0,0,0);
+        opacity:#{vOpacity};
+        "
+        atom.config.observe 'editor-background.image.blur',(radius)=>
+          @canvas.style.webkitFilter="blur(#{radius}px)"
+        @ctx = @canvas.getContext '2d'
+        if @before?
+          @element.insertBefore @canvas,@before
+        else
+          @element.appendChild @canvas
 
   stop:->
-    @canvas.remove()
+    if @player?
+        clearTimeout @player
+    if @canvas?
+        @canvas.remove()
     @frames = []
     @currentFrame = 0
 

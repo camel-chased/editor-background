@@ -141,6 +141,10 @@ module.exports = EditorBackground =
           default:''
           description:"Search for 'background loop',
           'background animation' or similar on youtube and paste url here."
+        playAnimation:
+          type:"boolean"
+          default:false
+          description:"enable or disable animation"
         animationSpeed:
           type:"integer"
           default:75
@@ -225,6 +229,12 @@ module.exports = EditorBackground =
       @blurImage.apply @,[url]
     @subs.add atom.config.observe 'editor-background.video.youTubeURL',(url) =>
       @startYouTube.apply @,[url]
+    @subs.add atom.config.observe 'editor-background.video.playAnimation',(play) =>
+        if play==false
+            @removeVideo()
+        else
+            @startYouTube.apply @,[]
+
     @initialize()
 
   deactivate: ()->
@@ -560,15 +570,18 @@ module.exports = EditorBackground =
 
 
   removeVideo:->
-    if @elements.gif?
-      @elements.gif.remove()
+    if @animation?
+        @animation.stop()
+        delete @animation
+
 
   startYouTube: ->
     if @packagesLoaded
       @removeVideo()
       conf = @configWnd.get 'editor-background'
-      if conf.video.youTubeURL? != ''
-        @downloadYTVideo conf.video.youTubeURL
+      if conf.video.youTubeURL? != '' && conf.video.playAnimation
+        if !@animation?
+            @downloadYTVideo conf.video.youTubeURL
       else
         @removeVideo()
     else
@@ -576,14 +589,14 @@ module.exports = EditorBackground =
 
 
   initAnimation:(ytid)->
-    #console.log 'initializing Animation...'
-    atom.notifications.add 'notice','starting animation...'
-    @animation = new animation(ytid)
-    @animation.start @elements.main,@elements.textBackground
-    conf = @configWnd.get 'editor-background'
-    videoOpacity = (conf.video.opacity/100).toFixed(2)
-    if @animation?.canvas?
-        inline @animation.canvas,"opacity:#{videoOpacity};"
+    if !@animation?
+        atom.notifications.add 'notice','starting animation...'
+        @animation = new animation(ytid)
+        @animation.start @elements.main,@elements.textBackground
+        conf = @configWnd.get 'editor-background'
+        videoOpacity = (conf.video.opacity/100).toFixed(2)
+        if @animation?.canvas?
+            inline @animation.canvas,"opacity:#{videoOpacity};"
 
 
   getOffset: (element, offset) ->
