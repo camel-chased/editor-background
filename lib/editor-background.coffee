@@ -752,13 +752,14 @@ module.exports = EditorBackground =
     if activeEditor?.displayBuffer?
       displayBuffer = activeEditor.displayBuffer
       if displayBuffer?
+        editorElement = atom.views.getView(activeEditor)
         actualLines = activeEditor.getVisibleRowRange()
         tokenizedLines = displayBuffer.getTokenizedLines()
         screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
 
-        scrollTop = displayBuffer.getScrollTop()
-        scrollLeft = displayBuffer.getScrollLeft()
-        lineHeight = displayBuffer.getLineHeightInPixels()
+        scrollTop = activeEditor.getScrollTop()
+        scrollLeft = activeEditor.getScrollLeft()
+        lineHeight = activeEditor.getLineHeightInPixels()
         offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
         editorElement = atom.views.getView(activeEditor)
         if editorElement?
