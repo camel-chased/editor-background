@@ -146,5 +146,6 @@ class Animation
         @canvas.remove()
     @frames = []
     @currentFrame = 0
+    @playing = false
 
 module.exports = Animation

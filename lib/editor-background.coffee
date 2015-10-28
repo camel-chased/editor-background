@@ -752,7 +752,7 @@ module.exports = EditorBackground =
     if activeEditor?.displayBuffer?
       displayBuffer = activeEditor.displayBuffer
       if displayBuffer?
-        actualLines = displayBuffer.getVisibleRowRange()
+        actualLines = activeEditor.getVisibleRowRange()
         tokenizedLines = displayBuffer.getTokenizedLines()
         screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
 
