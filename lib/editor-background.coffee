@@ -755,29 +755,31 @@ module.exports = EditorBackground =
         editorElement = atom.views.getView(activeEditor)
         actualLines = activeEditor.getVisibleRowRange()
         tokenizedLines = displayBuffer.getTokenizedLines()
-        screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
+        if tokenizedLines.length == 2
+          if actualLines? && actualLines[0]? && actualLines[1]?
+            screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
 
-        scrollTop = activeEditor.getScrollTop()
-        scrollLeft = activeEditor.getScrollLeft()
-        lineHeight = activeEditor.getLineHeightInPixels()
-        offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
-        editorElement = atom.views.getView(activeEditor)
-        if editorElement?
-          if editorElement.constructor.name == 'atom-text-editor'
-            editorRect = editorElement.getBoundingClientRect()
-            attrs =
-              {
-                editorElement:editorElement
-                activeEditor:activeEditor
-                lineHeight:lineHeight
-                displayBuffer:displayBuffer
-                screenLines:screenLines
-                offsetTop:offsetTop
-                scrollTop:scrollTop
-                scrollLeft:scrollLeft
-                visibleBuffer: actualLines
-              }
-            @drawLines attrs
+            scrollTop = activeEditor.getScrollTop()
+            scrollLeft = activeEditor.getScrollLeft()
+            lineHeight = activeEditor.getLineHeightInPixels()
+            offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
+            editorElement = atom.views.getView(activeEditor)
+            if editorElement?
+              if editorElement.constructor.name == 'atom-text-editor'
+                editorRect = editorElement.getBoundingClientRect()
+                attrs =
+                  {
+                    editorElement:editorElement
+                    activeEditor:activeEditor
+                    lineHeight:lineHeight
+                    displayBuffer:displayBuffer
+                    screenLines:screenLines
+                    offsetTop:offsetTop
+                    scrollTop:scrollTop
+                    scrollLeft:scrollLeft
+                    visibleBuffer: actualLines
+                  }
+                @drawLines attrs
 
   watchEditor:(editor)->
     @subs.add editor.onDidChangeScrollTop (scroll)=>
