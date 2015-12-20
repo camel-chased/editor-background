@@ -762,7 +762,7 @@ module.exports = EditorBackground =
             scrollTop = activeEditor.getScrollTop()
             scrollLeft = activeEditor.getScrollLeft()
             lineHeight = activeEditor.getLineHeightInPixels()
-            offsetTop = scrollTop - Math.floor(scrollTop / lineHeight) * lineHeight
+            offsetTop = scrollTop - Math.round(scrollTop / lineHeight) * lineHeight
             editorElement = atom.views.getView(activeEditor)
             if editorElement?
               if editorElement.constructor.name == 'atom-text-editor'

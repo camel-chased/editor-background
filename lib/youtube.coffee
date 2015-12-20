@@ -90,7 +90,7 @@ class YouTube
           temp[key] = value
 
       if temp.status!='ok'
-        console.log 'error',temp.reason
+        #console.log 'error',temp.reason
         msg = temp.reason.toString('UTF-8').replace(/\+/gi,' ')
         atom.notifications.addWarning msg
         return
@@ -120,7 +120,7 @@ class YouTube
             urlParams[key]=unescape(value)
           @formats[itag].urlParams = urlParams
 
-      console.log 'formats finished',@formats
+      #console.log 'formats finished',@formats
       @emitter.emit 'formats',@formats
       @emitter.emit 'ready'
       if next?
