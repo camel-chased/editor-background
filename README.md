@@ -26,14 +26,10 @@ Features:
 * 3d Box effect for bg image
 * theme independent
 
-![background](http://software.express/download/lion.jpg)
-![background](http://software.express/download/plaza.jpg)
-![background](http://software.express/download/trees.jpg)
-![background](http://software.express/download/customm.jpg)
-![background](http://software.express/download/bg1.jpg)
-![background](http://software.express/download/blackops.png)
-![background](http://software.express/download/treeview_bg.jpg)
-![background](http://software.express/download/editor_matrix.gif)
+![background](http://neuronet.pl:8888/editor-background/preview.jpg)
+
+
+[dedykowane aplikacje internetowe](https://www.neuronet.pl)
 
 
 
