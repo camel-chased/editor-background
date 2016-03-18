@@ -29,7 +29,7 @@ Features:
 ![background](http://neuronet.pl:8888/editor-background/preview.jpg)
 
 
-[dedykowane aplikacje internetowe](https://www.neuronet.pl)
+[aplikacje internetowe na zamówienie](https://www.neuronet.pl)
 
 
 
