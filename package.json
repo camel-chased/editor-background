@@ -1,7 +1,7 @@
 {
   "name": "editor-background",
   "main": "./lib/editor-background",
-  "version": "1.2.19",
+  "version": "1.2.20",
   "description": "Background image / animation changer. Change your mood by changing what you looking at most of the time. Background changer with some additional readability improvement and a lot of features... ",
   "repository": "https://github.com/camel-chased/editor-background.git",
   "license": "MIT",
