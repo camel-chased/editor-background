@@ -754,7 +754,10 @@ module.exports = EditorBackground =
       if displayBuffer?
         editorElement = atom.views.getView(activeEditor)
         actualLines = activeEditor.getVisibleRowRange()
-        tokenizedLines = displayBuffer.getTokenizedLines()
+        if displayBuffer.getTokenizedLines?
+          tokenizedLines = displayBuffer.getTokenizedLines()
+        else
+          tokenizedLines = displayBuffer.tokenizedBuffer.tokenizedLines
         if actualLines?.length == 2
           if actualLines? && actualLines[0]? && actualLines[1]?
             screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
