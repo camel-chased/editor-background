@@ -26,8 +26,8 @@ Features:
 * 3d Box effect for bg image
 * theme independent
 
-![background](http://neuronet.pl/editor-background-img/eb-dark.jpg)
-![background](http://neuronet.pl/editor-background-img/eb-light.jpg)
+![background](http://neuronet.it:8888/editor-background/eb-dark.jpg)
+![background](http://neuronet.it:8888/editor-background/eb-light.jpg)
 
 
 [oprogramowanie na zamówienie](https://www.neuronet.pl)
