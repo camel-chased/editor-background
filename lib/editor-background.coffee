@@ -621,8 +621,12 @@ module.exports = EditorBackground =
     text = text.replace(/[\t]{1}/gi,
       '<span class="editor-background-tab"></span>')
     line.innerHTML = text
-    marginLeft = tokenizedLine.indentLevel *
-      tokenizedLine.tabLength * attrs.charWidth
+    if tokenizedLine.indentLevel?
+      marginLeft = tokenizedLine.indentLevel *
+        tokenizedLine.tabLength * attrs.charWidth
+    else
+      marginLeft = attrs.tokenizedBuffer.indentLevelForLine(tokenizedLine.text) *
+        attrs.tokenizedBuffer.getTabLength() * attrs.charWidth
     marginLeft -= attrs.scrollLeft
     line.style.cssText = "
       margin-left:#{marginLeft}px;
@@ -721,6 +725,8 @@ module.exports = EditorBackground =
             attrsForward = {
               charWidth:charWidth
               scrollLeft:attrs.scrollLeft
+              tokenizedLines:attrs.tokenizedLines
+              tokenizedBuffer:attrs.tokenizedBuffer
             }
             for line in attrs.screenLines
               @drawLine line,attrsForward
@@ -781,6 +787,8 @@ module.exports = EditorBackground =
                     scrollTop:scrollTop
                     scrollLeft:scrollLeft
                     visibleBuffer: actualLines
+                    tokenizedLines:tokenizedLines
+                    tokenizedBuffer:displayBuffer.tokenizedBuffer
                   }
                 @drawLines attrs
 
