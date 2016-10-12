@@ -6,6 +6,7 @@ yt = require './youtube'
 popup = require './popup'
 configWindow = require './config'
 path = require 'path'
+elementResizeEvent = require 'element-resize-event'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
@@ -793,6 +794,12 @@ module.exports = EditorBackground =
       @drawBackground.apply @,[{scrolLeft:scroll},editor]
     @subs.add editor.onDidChange (change)=>
       @drawBackground.apply @,[{change:change},editor]
+    element = editor.getElement()
+    model = element.getModel()
+    editorElement = model.editorElement.component.domNodeValue
+    # little hack because of no "resize" event on textEditor
+    elementResizeEvent editorElement,()=>
+      @drawBackground.apply @,[{resize:editorElement},editor]
 
 
   watchEditors: ->
@@ -801,6 +808,8 @@ module.exports = EditorBackground =
     @subs.add atom.workspace.observeActivePaneItem (editor)=>
       @drawBackground.apply @,[{active:editor},editor]
     @subs.add atom.workspace.onDidDestroyPaneItem (pane)=>
+      @drawBackground.apply @,[{destroy:pane}]
+    @subs.add atom.workspace.onDidDestroyPane (pane)=>
       @drawBackground.apply @,[{destroy:pane}]
 
   initialize: ->
