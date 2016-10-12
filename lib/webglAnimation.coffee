@@ -122,7 +122,9 @@ class WebGLAnimation
     atom.config.observe 'editor-background.blurRadius',(radius)=>
       @canvas.style.webkitFilter="blur(#{radius}px)"
 
-    @ctx = canvas.getContext("webgl") || canvas.getContext("experimental-webgl")
+    @ctx = canvas.getContext("webgl")
+    if !@ctx
+      @ctx = canvas.getContext("experimental-webgl")
     vertexShader = createShaderFromScriptElement(gl, "2d-vertex-shader")
     fragmentShader = createShaderFromScriptElement(gl, "2d-fragment-shader")
     program = createProgram(gl, [vertexShader, fragmentShader])

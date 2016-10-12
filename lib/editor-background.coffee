@@ -26,7 +26,6 @@ blobToBase64 = (blob, cb) ->
     cb(base64)
   reader.readAsDataURL(blob)
 
-shadowDomEnabled = atom.config.get 'editor.useShadowDOM'
 shadowDomAlert = false
 
 planeInitialCss =
@@ -215,11 +214,6 @@ module.exports = EditorBackground =
 
 
   activate: (state) ->
-    if ! shadowDomEnabled
-      if ! shadowDomAlert
-        atom.notifications.add 'warning','Use Shadow DOM option must be
-        enabled to run editor-background'
-      return
     @subs = new CompositeDisposable
     @subs.add atom.commands.add 'atom-workspace',
       'editor-background:toggle': => @toggle()
