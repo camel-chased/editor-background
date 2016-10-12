@@ -739,6 +739,8 @@ module.exports = EditorBackground =
         @removeBgLines()
         return
     # changed active editor
+
+    @activeEditor = atom.workspace.getActiveTextEditor()
     if event?.active?
       @activeEditor=editor
       if editor?
@@ -746,8 +748,8 @@ module.exports = EditorBackground =
       else
         @removeBgLines()
       return
-    @activeEditor = atom.workspace.getActiveTextEditor()
     activeEditor = @activeEditor
+
     if !activeEditor?.displayBuffer?
         @removeBgLines()
     if activeEditor?.displayBuffer?
@@ -759,6 +761,12 @@ module.exports = EditorBackground =
           tokenizedLines = displayBuffer.getTokenizedLines()
         else
           tokenizedLines = displayBuffer.tokenizedBuffer.tokenizedLines
+        if !actualLines?
+          @removeBgLines()
+          actualLines = [0,1]
+          # we must display text bg even if visibleRowRange returns null
+          # because there may be some characters that user is typing
+
         if actualLines?.length == 2
           if actualLines? && actualLines[0]? && actualLines[1]?
             screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
@@ -811,6 +819,12 @@ module.exports = EditorBackground =
       @drawBackground.apply @,[{destroy:pane}]
     @subs.add atom.workspace.onDidDestroyPane (pane)=>
       @drawBackground.apply @,[{destroy:pane}]
+    # another hack to be notified when new editor comes in place
+    @subs.add atom.workspace.emitter.on "did-add-text-editor",(ev)=>
+      editor = ev.textEditor
+      @drawBackground.apply @,[{active:editor},editor]
+    #@subs.add atom.workspace.onDidInsertText (text)=>
+
 
   initialize: ->
     @elements.body = qr 'body'
