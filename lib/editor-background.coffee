@@ -724,7 +724,13 @@ module.exports = EditorBackground =
               tokenizedBuffer:attrs.tokenizedBuffer
             }
             for line in attrs.screenLines
-              @drawLine line,attrsForward
+              # editor.displayBuffer is undocumented, it's .splice function
+              # might return an empty array with a non-zero length
+              # Make sure that if that happens, @drawLine doesn't get passed
+              # `undefined` (CoffeeScript happily indexes non-existing array
+              # indices in a `for-in` loop, as the for loop it expands to only
+              # uses the `.length` property to determine the array's domain.)
+              @drawLine line,attrsForward if line?
 
 
   activeEditor:{}
