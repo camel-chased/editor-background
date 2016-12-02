@@ -230,7 +230,7 @@ module.exports = EditorBackground =
         else
             @startYouTube.apply @,[]
 
-    @initialize()
+    @initializePackage()
 
   deactivate: ()->
     if @subs?
@@ -832,7 +832,7 @@ module.exports = EditorBackground =
     #@subs.add atom.workspace.onDidInsertText (text)=>
 
 
-  initialize: ->
+  initializePackage: ->
     @elements.body = qr 'body'
     @elements.workspace = qr 'atom-workspace'
     @elements.editor = null
@@ -906,7 +906,7 @@ module.exports = EditorBackground =
 
       @applyBackground.apply @
     else
-      setTimeout (=>@initialize.apply @),1000
+      setTimeout (=>@initializePackage.apply @),1000
 
   updateBgPos: ->
     conf = @configWnd.get('editor-background')
