@@ -844,7 +844,7 @@ module.exports = EditorBackground =
       @elements.editor = atom.views.getView(activeEditor)
     @elements.treeView = qr '.tree-view'
     @elements.left = qr '.left'
-    @elements.leftPanel = qr '.panel-left'
+    @elements.leftPanel = (qr '.panel-left') or (qr '.panel-right')
     @elements.resizer = qr '.tree-view-resizer'
     @elements.tabBar = qr '.tab-bar'
     @elements.insetPanel = qr '.inset-panel'
