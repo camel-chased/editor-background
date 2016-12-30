@@ -10,7 +10,8 @@ elementResizeEvent = require 'element-resize-event'
 
 qr = (selector) -> document.querySelector selector
 style = (element) -> document.defaultView.getComputedStyle element
-inline = (element,style) -> element.style.cssText += style
+inline = (element,style) -> if element?.style
+  element.style.cssText += style
 escapeHTML = (text) ->
   text
     .replace(/&/g, "&amp;")
@@ -40,6 +41,8 @@ planeInitialCss =
   z-index:0;"
 
 colorToArray = (str) ->
+  if !str?
+    return [0,0,0,0]
   result = str.replace(/[^\d,\.]/g,'')
   result = result.split(',')
   result
@@ -849,7 +852,7 @@ module.exports = EditorBackground =
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
     #console.log 'keys',keys,loaded
-    if loaded.length == keys.length
+    if true
 
       @insertMain()
       @popup = new popup()
@@ -888,7 +891,8 @@ module.exports = EditorBackground =
       @insertTextBackground()
 
       @colors.workspaceBgColor=style(@elements.editor).backgroundColor
-      @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
+      if @elements.treeView?
+        @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       @packagesLoaded = true
 
       videoOpacity = (conf.video.opacity/100).toFixed(2)
@@ -896,6 +900,8 @@ module.exports = EditorBackground =
           inline @animation.canvas,"opacity:#{videoOpacity};";
 
       @blurImage()
+
+
       @elements.videoPath=@pluginPath()+'/youtube-videos/'
       @elements.libPath=@pluginPath()+'/lib/'
       @elements.videoExt = '.mp4'
