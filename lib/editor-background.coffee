@@ -465,7 +465,7 @@ module.exports = EditorBackground =
 
 
   chooseFormat:(formats,next)->
-    console.log 'choose format?'
+    #console.log 'choose format?'
     html = '
     <div style="font-size:1.1em;text-align:center;margin-bottom:20px;">
     Choose video format</div>
@@ -545,18 +545,18 @@ module.exports = EditorBackground =
           @insertVideo.apply @,[savePath]
 
         @yt.on 'ready',=>
-          console.log 'get video info ready'
+          #console.log 'get video info ready'
           conf = @configWnd.get('editor-background')
           @time = {
             start:conf.video.startTime,
             end:conf.video.endTime
           }
           @chooseFormat @yt.formats,(format)=>
-            console.log 'we chosen format',format
+            #console.log 'we chosen format',format
             @videoWidth = @yt.formats[format].width
             @videoHeight = @yt.formats[format].height
             @yt.download {filename:savePath,itag:format,time:@time}
-        console.log 'getting video info'
+        #console.log 'getting video info'
         @yt.getVideoInfo()
       else
         @initAnimation(ytid)
@@ -606,22 +606,29 @@ module.exports = EditorBackground =
         offset
 
 
-  drawLine: (tokenizedLine,attrs) ->
+  drawLine: (textLine,attrs) ->
     line = document.createElement 'div'
     line.className = 'editor-background-line'
-    text = tokenizedLine.text.trim()
+    text = textLine.trim()
     text = escapeHTML(text)
     text = text.replace(/[\s]{1}/gi,
       '<span class="editor-background-white"></span>')
     text = text.replace(/[\t]{1}/gi,
       '<span class="editor-background-tab"></span>')
     line.innerHTML = text
-    if tokenizedLine.indentLevel?
-      marginLeft = tokenizedLine.indentLevel *
-        tokenizedLine.tabLength * attrs.charWidth
-    else
-      marginLeft = attrs.tokenizedBuffer.indentLevelForLine(tokenizedLine.text) *
-        attrs.tokenizedBuffer.getTabLength() * attrs.charWidth
+
+    startTextOffset = textLine.search(/[^\s]+/gi)
+    startText = textLine.substr(0,startTextOffset)
+
+    spaces = startText.match(/ +/)?[0].length
+    if !spaces?
+      spaces=0
+    tabs = textLine.match(/^\t+/)?[0].length
+    if !tabs?
+      tabs=0
+    offsetLeft = spaces*attrs.charWidth + tabs*attrs.tabWidth
+
+    marginLeft = offsetLeft
     marginLeft -= attrs.scrollLeft
     line.style.cssText = "
       margin-left:#{marginLeft}px;
@@ -642,8 +649,14 @@ module.exports = EditorBackground =
           color = conf.text.color.toHexString()
           expand = conf.text.expand
 
-          root = editor.shadowRoot
+          root = editor.rootElement
           scrollView = root.querySelector '.scroll-view'
+
+          activeEditor = atom.workspace.getActiveTextEditor()
+          editor = atom.views.getView(activeEditor)
+
+          #console.log "screen lines",attrs.screenLines
+
           if scrollView?
             offset = @getOffset scrollView
             top = offset.top - attrs.offsetTop
@@ -651,13 +664,11 @@ module.exports = EditorBackground =
             right = left + scrollView.width + textBlur
             bottom = top + scrollView.height
             activeEditor = attrs.activeEditor
-            displayBuffer = attrs.displayBuffer
             lineHeight = attrs.lineHeight
-            charWidth = displayBuffer.getDefaultCharWidth()
-            tabWidth = displayBuffer.getTabLength() * charWidth
+            charWidth = activeEditor.getDefaultCharWidth()
+            tabWidth = activeEditor.getTabLength() * charWidth
 
-          editor = atom.workspace.getActiveTextEditor()
-          editor = atom.views.getView(editor)
+
 
           if editor?
             computedStyle = window.getComputedStyle(editor)
@@ -719,17 +730,10 @@ module.exports = EditorBackground =
 
             attrsForward = {
               charWidth:charWidth
+              tabWidth:tabWidth
               scrollLeft:attrs.scrollLeft
-              tokenizedLines:attrs.tokenizedLines
-              tokenizedBuffer:attrs.tokenizedBuffer
             }
             for line in attrs.screenLines
-              # editor.displayBuffer is undocumented, it's .splice function
-              # might return an empty array with a non-zero length
-              # Make sure that if that happens, @drawLine doesn't get passed
-              # `undefined` (CoffeeScript happily indexes non-existing array
-              # indices in a `for-in` loop, as the for loop it expands to only
-              # uses the `.length` property to determine the array's domain.)
               @drawLine line,attrsForward if line?
 
 
@@ -756,55 +760,51 @@ module.exports = EditorBackground =
       return
     activeEditor = @activeEditor
 
-    if !activeEditor?.displayBuffer?
+    if activeEditor?
+      buffer = activeEditor.getBuffer()
+      editorElement = atom.views.getView(activeEditor)
+      actualLines = activeEditor.getVisibleRowRange()
+      lines = buffer.getLines()
+
+      if !actualLines?
         @removeBgLines()
-    if activeEditor?.displayBuffer?
-      displayBuffer = activeEditor.displayBuffer
-      if displayBuffer?
-        editorElement = atom.views.getView(activeEditor)
-        actualLines = activeEditor.getVisibleRowRange()
-        if displayBuffer.getTokenizedLines?
-          tokenizedLines = displayBuffer.getTokenizedLines()
-        else
-          tokenizedLines = displayBuffer.tokenizedBuffer.tokenizedLines
-        if !actualLines?
-          @removeBgLines()
-          actualLines = [0,1]
-          # we must display text bg even if visibleRowRange returns null
-          # because there may be some characters that user is typing
+        actualLines = [0,1]
+        # we must display text bg even if visibleRowRange returns null
+        # because there may be some characters that user is typing
 
-        if actualLines?.length == 2
-          if actualLines? && actualLines[0]? && actualLines[1]?
-            screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
+      if actualLines?.length == 2
+        if actualLines? && actualLines[0]? && actualLines[1]?
+          #screenLines = tokenizedLines[ actualLines[0]..actualLines[1] ]
+          screenLines = lines[actualLines[0]..actualLines[1]]
+          #console.log "screenLines",screenLines
+          elem = activeEditor.getElement()
 
-            scrollTop = activeEditor.getScrollTop()
-            scrollLeft = activeEditor.getScrollLeft()
-            lineHeight = activeEditor.getLineHeightInPixels()
-            offsetTop = scrollTop - Math.round(scrollTop / lineHeight) * lineHeight
-            editorElement = atom.views.getView(activeEditor)
-            if editorElement?
-              if editorElement.constructor.name == 'atom-text-editor'
-                editorRect = editorElement.getBoundingClientRect()
-                attrs =
-                  {
-                    editorElement:editorElement
-                    activeEditor:activeEditor
-                    lineHeight:lineHeight
-                    displayBuffer:displayBuffer
-                    screenLines:screenLines
-                    offsetTop:offsetTop
-                    scrollTop:scrollTop
-                    scrollLeft:scrollLeft
-                    visibleBuffer: actualLines
-                    tokenizedLines:tokenizedLines
-                    tokenizedBuffer:displayBuffer.tokenizedBuffer
-                  }
-                @drawLines attrs
+          scrollTop = elem.getScrollTop()
+          scrollLeft = elem.getScrollLeft()
+          lineHeight = activeEditor.getLineHeightInPixels()
+          offsetTop = scrollTop - Math.round(scrollTop / lineHeight) * lineHeight
+          editorElement = atom.views.getView(activeEditor)
+          if editorElement?
+            if editorElement.constructor.name == 'atom-text-editor'
+              editorRect = editorElement.getBoundingClientRect()
+              attrs =
+                {
+                  editorElement:editorElement
+                  activeEditor:activeEditor
+                  lineHeight:lineHeight
+                  screenLines:screenLines
+                  offsetTop:offsetTop
+                  scrollTop:scrollTop
+                  scrollLeft:scrollLeft
+                  visibleBuffer: actualLines
+                }
+              @drawLines attrs
 
   watchEditor:(editor)->
-    @subs.add editor.onDidChangeScrollTop (scroll)=>
+    elem = editor.getElement()
+    @subs.add elem.onDidChangeScrollTop (scroll)=>
       @drawBackground.apply @,[{scrollTop:scroll},editor]
-    @subs.add editor.onDidChangeScrollLeft (scroll)=>
+    @subs.add elem.onDidChangeScrollLeft (scroll)=>
       @drawBackground.apply @,[{scrolLeft:scroll},editor]
     @subs.add editor.onDidChange (change)=>
       @drawBackground.apply @,[{change:change},editor]
