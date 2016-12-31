@@ -27,10 +27,12 @@ Features:
 * theme independent
 
 ![background](http://neuronet.it:8080/editor-background/eb_dark.jpg)
+![background](http://neuronet.it:8080/editor-background/eb_dark-4.jpg)
 ![background](http://neuronet.it:8080/editor-background/eb_dark-1.jpg)
 ![background](http://neuronet.it:8080/editor-background/eb_dark-2.jpg)
 ![background](http://neuronet.it:8080/editor-background/eb_dark-3.jpg)
 ![background](http://neuronet.it:8080/editor-background/eb_light.jpg)
+![background](http://neuronet.it:8080/editor-background/eb_light-2.jpg)
 
 
 [oprogramowanie na zamówienie](https://www.neuronet.pl)
