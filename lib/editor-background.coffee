@@ -9,6 +9,7 @@ path = require 'path'
 elementResizeEvent = require 'element-resize-event'
 
 qr = (selector) -> document.querySelector selector
+qra = (selector) -> document.querySelectorAll selector
 style = (element) -> document.defaultView.getComputedStyle element
 inline = (element,style) -> if element?.style
   element.style.cssText += style
@@ -409,6 +410,7 @@ module.exports = EditorBackground =
       i++
     @elements.videoCanvas.remove()
     @elements.video.remove()
+    @removeOldCanvas()
     atom.config.set('editor-background.blurRadius',0)
     atom.config.set('editor-background.imageURL','')
     @popup.hide()
@@ -432,6 +434,7 @@ module.exports = EditorBackground =
     videoHeight = @videoHeight
     videoCanvas.width = videoWidth
     videoCanvas.height = videoHeight
+    @removeOldCanvas()
     videoCanvas.id = "editor-background-videoCanvas"
     conf = @configWnd.get 'editor-background'
     videoOpacity = (conf.video.opacity/100).toFixed(2)
@@ -502,7 +505,6 @@ module.exports = EditorBackground =
 
 
   downloadYTVideo: (url)->
-    #console.log 'download yt video?',url
     videoExt = @elements.videoExt
     videoFormat = @elements.videoFormat
     if url != ''
@@ -566,16 +568,24 @@ module.exports = EditorBackground =
     else
       @removeVideo()
 
+  removeOldCanvas:->
+    el = qra "#editor-background-videoCanvas"
+    el.forEach (e)->
+      console.log("removing",e)
+      e.remove()
+
+    el = qra ".editor-background-animation"
+    el.forEach (e)->e.remove()
 
   removeVideo:->
     if @animation?
         @animation.stop()
         delete @animation
+    @removeOldCanvas()
 
 
   startYouTube: ->
     if @packagesLoaded
-      @removeVideo()
       conf = @configWnd.get 'editor-background'
       if conf.video.youTubeURL? != '' && conf.video.playAnimation
         if !@animation?
@@ -587,14 +597,15 @@ module.exports = EditorBackground =
 
 
   initAnimation:(ytid)->
+    canvasIsAdded = qra ".editor-background-animation".length>0
     if !@animation?
-        atom.notifications.add 'notice','starting animation...'
-        @animation = new animation(ytid)
-        @animation.start @elements.main,@elements.textBackground
-        conf = @configWnd.get 'editor-background'
-        videoOpacity = (conf.video.opacity/100).toFixed(2)
-        if @animation?.canvas?
-            inline @animation.canvas,"opacity:#{videoOpacity};"
+      atom.notifications.add 'notice','starting animation...'
+      @animation = new animation(ytid)
+      @animation.start @elements.main,@elements.textBackground
+      conf = @configWnd.get 'editor-background'
+      videoOpacity = (conf.video.opacity/100).toFixed(2)
+      if @animation?.canvas?
+          inline @animation.canvas,"opacity:#{videoOpacity};"
 
 
   getOffset: (element, offset) ->
@@ -821,8 +832,10 @@ module.exports = EditorBackground =
 
   watchEditors: ->
     @subs.add atom.workspace.observeTextEditors (editor) =>
+      @editorLoaded()
       @watchEditor.apply @,[editor]
     @subs.add atom.workspace.observeActivePaneItem (editor)=>
+      @editorLoaded()
       @drawBackground.apply @,[{active:editor},editor]
     @subs.add atom.workspace.onDidDestroyPaneItem (pane)=>
       @drawBackground.apply @,[{destroy:pane}]
@@ -830,10 +843,17 @@ module.exports = EditorBackground =
       @drawBackground.apply @,[{destroy:pane}]
     # another hack to be notified when new editor comes in place
     @subs.add atom.workspace.emitter.on "did-add-text-editor",(ev)=>
+      @editorLoaded()
       editor = ev.textEditor
       @drawBackground.apply @,[{active:editor},editor]
     #@subs.add atom.workspace.onDidInsertText (text)=>
 
+  editorLoaded: ->
+    if @elements.workspace?
+      activeEditor = atom.workspace.getActiveTextEditor()
+      @elements.editor = atom.views.getView(activeEditor)
+      if @elements.editor?
+        @colors.workspaceBgColor=style(@elements.editor).backgroundColor
 
   initializePackage: ->
     @elements.body = qr 'body'
@@ -852,7 +872,7 @@ module.exports = EditorBackground =
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
     #console.log 'keys',keys,loaded
-    if @elements.editor?
+    if true
 
       @insertMain()
       @popup = new popup()
@@ -889,10 +909,17 @@ module.exports = EditorBackground =
       @elements.main.appendChild @elements.plane
 
       @insertTextBackground()
+
       if @elements.editor?
         @colors.workspaceBgColor=style(@elements.editor).backgroundColor
+      else
+        @colors.workspaceBgColor="rgb(0,0,0)"
+
       if @elements.treeView?
         @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
+      else
+        @colors.treeOriginalRGB="rgb(0,0,0)"
+
       @packagesLoaded = true
 
       videoOpacity = (conf.video.opacity/100).toFixed(2)
