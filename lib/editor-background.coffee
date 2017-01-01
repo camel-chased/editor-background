@@ -852,7 +852,7 @@ module.exports = EditorBackground =
     keys = Object.keys @elements
     loaded = (@elements[k] for k in keys when @elements[k]?)
     #console.log 'keys',keys,loaded
-    if true
+    if @elements.editor?
 
       @insertMain()
       @popup = new popup()
@@ -889,8 +889,8 @@ module.exports = EditorBackground =
       @elements.main.appendChild @elements.plane
 
       @insertTextBackground()
-
-      @colors.workspaceBgColor=style(@elements.editor).backgroundColor
+      if @elements.editor?
+        @colors.workspaceBgColor=style(@elements.editor).backgroundColor
       if @elements.treeView?
         @colors.treeOriginalRGB=style(@elements.treeView).backgroundColor
       @packagesLoaded = true
