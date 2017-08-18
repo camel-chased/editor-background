@@ -663,7 +663,8 @@ module.exports = EditorBackground =
           color = conf.text.color.toHexString()
           expand = conf.text.expand
 
-          root = editor.rootElement
+
+          root = atom.views.getView(editor)
           scrollView = root.querySelector '.scroll-view'
 
           activeEditor = atom.workspace.getActiveTextEditor()
