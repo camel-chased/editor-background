@@ -824,7 +824,9 @@ module.exports = EditorBackground =
       @drawBackground.apply @,[{change:change},editor]
     element = editor.getElement()
     model = element.getModel()
-    editorElement = model.editorElement.component.domNodeValue
+    activeEditor = atom.workspace.getActiveTextEditor()
+    editorElement = atom.views.getView(activeEditor)
+    #editorElement = model.editorElement.component.domNodeValue
     # little hack because of no "resize" event on textEditor
     elementResizeEvent editorElement,()=>
       @drawBackground.apply @,[{resize:editorElement},editor]
