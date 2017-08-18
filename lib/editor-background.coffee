@@ -6,7 +6,7 @@ yt = require './youtube'
 popup = require './popup'
 configWindow = require './config'
 path = require 'path'
-elementResizeEvent = require 'element-resize-event'
+#elementResizeEvent = require 'element-resize-event'
 
 qr = (selector) -> document.querySelector selector
 qra = (selector) -> document.querySelectorAll selector
@@ -828,8 +828,9 @@ module.exports = EditorBackground =
     editorElement = atom.views.getView(activeEditor)
     #editorElement = model.editorElement.component.domNodeValue
     # little hack because of no "resize" event on textEditor
-    elementResizeEvent editorElement,()=>
-      @drawBackground.apply @,[{resize:editorElement},editor]
+    #elementResizeEvent editorElement,()=>
+    #  @drawBackground.apply @,[{resize:editorElement},editor]
+    #  elementResizeEvent does not work anymore
 
 
   watchEditors: ->
