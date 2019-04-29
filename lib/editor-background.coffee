@@ -571,7 +571,6 @@ module.exports = EditorBackground =
   removeOldCanvas:->
     el = qra "#editor-background-videoCanvas"
     el.forEach (e)->
-      console.log("removing",e)
       e.remove()
 
     el = qra ".editor-background-animation"
